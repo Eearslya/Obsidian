@@ -1,0 +1,13 @@
+.cache/
+.vs/
+.vscode/
+Build/
+[Bb]in/
+[Oo]bj/
+
+*.a
+*.dll
+*.exe
+*.lib
+*.o
+*.so
