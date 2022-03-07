@@ -184,6 +184,8 @@ static LRESULT CALLBACK HandleMessage(HWND hwnd, U32 msg, WPARAM wParam, LPARAM 
 		case WM_CLOSE:
 			PostQuitMessage(0);
 			break;
+		case WM_ERASEBKGND:
+			return 1;
 	}
 	return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
