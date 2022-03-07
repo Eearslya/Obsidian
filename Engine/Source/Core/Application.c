@@ -13,9 +13,11 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 	// Initialize the logger.
 	Logger_Initialize();
 
+	// Create our application data.
 	*app = Platform_Alloc(sizeof(struct ApplicationT));
 	Platform_MemZero(*app, sizeof(struct ApplicationT));
 
+	// Ensure we have the required callbacks. Some callbacks are optional.
 	if (createInfo->Callbacks.Initialize == NULL || createInfo->Callbacks.Update == NULL ||
 	    createInfo->Callbacks.Render == NULL) {
 		LogF("[Application] Cannot create an application without callbacks for Initialize, Update, and Render!");
@@ -23,9 +25,11 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 		return FALSE;
 	}
 
+	// Copy data into our new application object.
 	(*app)->Callbacks = createInfo->Callbacks;
 	(*app)->UserData  = createInfo->UserData;
 
+	// Initialize the system platform.
 	if (!Platform_Initialize(&(*app)->Platform,
 	                         createInfo->Name,
 	                         createInfo->WindowX,
@@ -37,12 +41,14 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 		return FALSE;
 	}
 
+	// Initialize the application.
 	if (!(*app)->Callbacks.Initialize(*app)) {
 		LogF("[Application] Application failed to initialize!");
 
 		return FALSE;
 	}
 
+	// Send an event for the platform's starting size.
 	if ((*app)->Callbacks.OnResized) { (*app)->Callbacks.OnResized(*app, createInfo->WindowW, createInfo->WindowH); }
 
 	return TRUE;
