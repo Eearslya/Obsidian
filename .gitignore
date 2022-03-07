@@ -3,6 +3,7 @@
 .vscode/
 Build/
 [Bb]in/
+Doxygen/
 [Oo]bj/
 
 *.a

@@ -72,12 +72,12 @@ enum { FALSE = 0, TRUE = 1 };
 #	define OBSIDIAN_DEBUG 1
 #	ifdef _MSC_VER
 #		include <intrin.h>
-#		define DebugBreak() __debugbreak()
+#		define ObsDebugBreak() __debugbreak()
 #	else
-#		define DebugBreak() __builtin_trap()
+#		define ObsDebugBreak() __builtin_trap()
 #	endif
 #else
-#	define DebugBreak() abort()
+#	define ObsDebugBreak() abort()
 #endif
 
 // Shared library exports/imports

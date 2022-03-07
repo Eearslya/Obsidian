@@ -1,4 +1,5 @@
 #include <Obsidian/Core/Logger.h>
+#include <Obsidian/Platform/Platform.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,12 +18,19 @@ void Logger_ReportAssertion(const char* expr, const char* msg, const char* file,
 }
 
 void Logger_Output(LogLevel level, const char* fmt, ...) {
-	static char output[16384];
+	static char msg[16384];
+	char* output = &msg[128];
 
 	__builtin_va_list args;
 	va_start(args, fmt);
-	vsnprintf(output, sizeof(output), fmt, args);
+	vsnprintf(msg, sizeof(msg), fmt, args);
 	va_end(args);
 
-	printf("[%s] %s\n", LogLevel_Names[level], output);
+	snprintf(output, sizeof(msg) - 128, "[%s] %s\r\n", LogLevel_Names[level], msg);
+
+	if (level > LogLevel_Error) {
+		Platform_ConsoleOut(output);
+	} else {
+		Platform_ConsoleError(output);
+	}
 }

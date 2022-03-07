@@ -22,7 +22,7 @@ OAPI void Logger_Output(LogLevel level, const char* fmt, ...);
 		if (expr) {                                               \
 		} else {                                                  \
 			Logger_ReportAssertion(#expr, msg, __FILE__, __LINE__); \
-			DebugBreak();                                           \
+			ObsDebugBreak();                                        \
 		}                                                         \
 	} while (0)
 #define Assert(expr) AssertMsg(expr, "")
