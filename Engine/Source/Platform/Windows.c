@@ -22,9 +22,6 @@ static LARGE_INTEGER ClockStartTime;
 static LRESULT CALLBACK HandleMessage(HWND hwnd, U32 msg, WPARAM wParam, LPARAM lParam);
 
 B8 Platform_Initialize(PlatformState* state, const char* appName, I32 windowX, I32 windowY, I32 windowW, I32 windowH) {
-	// Initialize the logger.
-	Logger_Initialize();
-
 	// Allocate our state object.
 	*state = malloc(sizeof(struct PlatformStateT));
 	memset(*state, 0, sizeof(struct PlatformStateT));

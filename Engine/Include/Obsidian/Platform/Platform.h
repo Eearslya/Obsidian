@@ -21,21 +21,20 @@ typedef struct PlatformStateT* PlatformState;
  *  @return TRUE on success, FALSE on error.
  *  @sa Platform_Shutdown()
  */
-OAPI B8
-Platform_Initialize(PlatformState* state, const char* appName, I32 windowX, I32 windowY, I32 windowW, I32 windowH);
+B8 Platform_Initialize(PlatformState* state, const char* appName, I32 windowX, I32 windowY, I32 windowW, I32 windowH);
 
 /**
  * Shuts down the platform layer.
  * @param state A PlatformState object, as previous initialized with Platform_Initialize().
  */
-OAPI void Platform_Shutdown(PlatformState state);
+void Platform_Shutdown(PlatformState state);
 
 /**
  * Update the platform layer.
  * @param state A PlatformState object previously returned by Platform_Initialize().
  * @return TRUE if the application should continue. FALSE if the application should terminate.
  */
-OAPI B8 Platform_Update(PlatformState state);
+B8 Platform_Update(PlatformState state);
 
 /**
  * Allocate a memory block.
