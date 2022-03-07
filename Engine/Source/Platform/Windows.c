@@ -175,6 +175,10 @@ F64 Platform_GetAbsoluteTime() {
 	return (F64) now.QuadPart * ClockFrequency;
 }
 
+void Platform_Sleep(U64 ms) {
+	Sleep(ms);
+}
+
 static LRESULT CALLBACK HandleMessage(HWND hwnd, U32 msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
 		case WM_CLOSE:
