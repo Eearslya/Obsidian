@@ -19,8 +19,8 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 
 	// Ensure we have the required callbacks. Some callbacks are optional.
 	if (createInfo->Callbacks.Initialize == NULL || createInfo->Callbacks.Update == NULL ||
-	    createInfo->Callbacks.Render == NULL) {
-		LogF("[Application] Cannot create an application without callbacks for Initialize, Update, and Render!");
+	    createInfo->Callbacks.Render == NULL || createInfo->Callbacks.Shutdown == NULL) {
+		LogF("[Application] Cannot create an application without callbacks for Initialize, Update, Render, and Shutdown!");
 
 		return FALSE;
 	}
@@ -77,9 +77,14 @@ B8 Application_Run(Application app) {
 		}
 	}
 	app->Running = FALSE;
+	app->Callbacks.Shutdown(app);
 	Platform_Shutdown(app->Platform);
 
 	return badShutdown == FALSE;
+}
+
+void Application_SetUserData(Application app, void* ptr) {
+	app->UserData = ptr;
 }
 
 void* Application_GetUserData(Application app) {

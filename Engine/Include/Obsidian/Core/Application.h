@@ -10,6 +10,7 @@ typedef struct ApplicationCallbacksT {
 	B8 (*Initialize)(Application app);                         /**< Called during initial setup of the application. */
 	B8 (*Update)(Application app, F32 deltaTime);              /**< Called once per update tick. */
 	B8 (*Render)(Application app, F32 deltaTime);              /**< Called once per frame. */
+	void (*Shutdown)(Application app);                         /**< Called upon application exit. */
 	void (*OnResized)(Application app, U32 width, U32 height); /**< Called when the platform's window is resized. */
 } ApplicationCallbacks;
 
@@ -38,6 +39,14 @@ OAPI B8 Application_Create(const ApplicationCreateInfo* createInfo, Application*
  * @return TRUE upon clean exit, FALSE if an error occurred.
  */
 OAPI B8 Application_Run(Application app);
+
+/**
+ * Set the UserData pointer.
+ * @param app The application to save to.
+ * @param ptr The pointer to save.
+ * @sa Application_GetUserData()
+ */
+OAPI void Application_SetUserData(Application app, void* ptr);
 
 /**
  * Retrieves the UserData pointer passed in with ApplicationCreateInfo.
