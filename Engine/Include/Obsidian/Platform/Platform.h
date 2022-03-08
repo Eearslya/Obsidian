@@ -49,9 +49,26 @@ void* Platform_Alloc(size_t bytes);
  * @param bytes Size of the desired memory block.
  * @param align The desired alignment.
  * @return NULL upon failure, otherwise a pointer to the block of memory.
- * @sa Platform_AlignedFree()
+ * @sa Platform_FreeAligned()
  */
-void* Platform_AlignedAlloc(size_t bytes, U8 align);
+void* Platform_AllocAligned(size_t bytes, U8 align);
+
+/**
+ * Reallocate an already-allocated memory block.
+ * @param ptr The existing allocation.
+ * @param bytes The new size of the allocation.
+ * @return NULL upon failure, otherwise a pointer to the resized block of memory.
+ */
+void* Platform_Realloc(void* ptr, size_t bytes);
+
+/**
+ * Reallocate an already-allocated aligned memory block.
+ * @param ptr The existing allocation.
+ * @param align The desired alignment.
+ * @param bytes The new size of the allocation.
+ * @return NULL upon failure, otherwise a pointer to the resized block of memory.
+ */
+void* Platform_ReallocAligned(void* ptr, U8 align, size_t bytes);
 
 /**
  * Free an allocated memory block.
@@ -63,9 +80,9 @@ void Platform_Free(void* ptr);
 /**
  * Free an allocated memory block that was aligned.
  * @param ptr A pointer to the start of the allocated memory.
- * @sa Platform_AlignedAlloc()
+ * @sa Platform_AllocAligned()
  */
-void Platform_AlignedFree(void* ptr);
+void Platform_FreeAligned(void* ptr);
 
 /**
  * Copy an area of memory to another area.
@@ -74,6 +91,14 @@ void Platform_AlignedFree(void* ptr);
  * @param bytes The number of bytes to copy.
  */
 void Platform_MemCopy(void* dst, const void* src, size_t bytes);
+
+/**
+ * Move an area of memory to another area. This allows source and destination areas to overlap.
+ * @param dst A pointer to the destination of the copy.
+ * @param src A pointer to the source of the copy.
+ * @param bytes The number of bytes to copy.
+ */
+void Platform_MemMove(void* dst, const void* src, size_t bytes);
 
 /**
  * Set all bytes in the specified area to a value.

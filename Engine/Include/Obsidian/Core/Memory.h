@@ -65,6 +65,14 @@ OAPI void* Memory_Allocate(size_t size, MemoryTag tag);
 OAPI void* Memory_AllocateAligned(size_t size, U8 align, MemoryTag tag);
 
 /**
+ * Reallocate a block of memory to the new specified size.
+ * @param ptr The existing allocation.
+ * @param size The new size in bytes.
+ * @return NULL upon reallocation failure, otherwise a pointer to the resized block of memory.
+ */
+OAPI void* Memory_Reallocate(void* ptr, size_t size);
+
+/**
  * Free a previously requested block of memory.
  * @param ptr A pointer previously returned by Memory_Allocate() or Memory_AllocateAligned().
  */
@@ -77,6 +85,14 @@ OAPI void Memory_Free(void* ptr);
  * @param bytes The number of bytes to copy.
  */
 OAPI void Memory_Copy(void* dst, const void* src, size_t bytes);
+
+/**
+ * Move bytes from one area of memory to another. This allows source and destination to overlap.
+ * @param dst A pointer to the destination memory.
+ * @param src A pointer to the source memory.
+ * @param bytes The number of bytes to copy.
+ */
+OAPI void Memory_Move(void* dst, const void* src, size_t bytes);
 
 /**
  * Set a block of memory to a specified value.

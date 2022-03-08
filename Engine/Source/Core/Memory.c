@@ -44,7 +44,7 @@ static size_t GetTrackingOverhead(U8 align) {
 
 /** Get the allocation metadata from the user-visible pointer. */
 static struct AllocationT* GetAllocationMetadata(void* ptr) {
-	return (struct AllocationT*) ptr - sizeof(struct AllocationT);
+	return (struct AllocationT*) (ptr - sizeof(struct AllocationT));
 }
 
 static void FormatMemoryUsage(char* buffer, size_t bufferSize, size_t bytes) {
@@ -102,7 +102,7 @@ void* Memory_AllocateAligned(size_t size, U8 align, MemoryTag tag) {
 	if (align == 0) {
 		ptr = Platform_Alloc(actualSize);
 	} else {
-		ptr = Platform_AlignedAlloc(actualSize, align);
+		ptr = Platform_AllocAligned(actualSize, align);
 	}
 	if (ptr == NULL) {
 		LogE("[Memory] Failed to allocate %lld bytes for %s!", size, MemoryTagNames[tag]);
@@ -125,6 +125,47 @@ void* Memory_AllocateAligned(size_t size, U8 align, MemoryTag tag) {
 	MemoryStats.TotalAllocatedBytes += actualSize;
 	MemoryStats.AllocatedBytesByTag[MemoryTag_Internal] += trackingOverhead;
 	MemoryStats.AllocatedBytesByTag[tag] += size;
+
+	return returnPtr;
+}
+
+void* Memory_Reallocate(void* ptr, size_t size) {
+	if (ptr == NULL) { return NULL; }
+
+	// Fetch allocation metadata and find our actual pointer.
+	struct AllocationT* tracking  = GetAllocationMetadata(ptr);
+	const size_t trackingOverhead = GetTrackingOverhead(tracking->Alignment);
+	const size_t oldSize          = tracking->Size;
+	const size_t actualSize       = oldSize + trackingOverhead;
+	void* actualPtr               = ptr - trackingOverhead;
+
+	// Calculate our new size.
+	const size_t newActualSize = size + trackingOverhead;
+
+	// Reallocate and get our new pointer.
+	void* newActualPtr = NULL;
+	if (tracking->Alignment == 0) {
+		newActualPtr = Platform_Realloc(actualPtr, newActualSize);
+	} else {
+		newActualPtr = Platform_ReallocAligned(actualPtr, tracking->Alignment, newActualSize);
+	}
+	if (newActualPtr == NULL) {
+		LogE("[Memory] Failed to reallocate '%s' memory from %lld to %lld bytes!",
+		     MemoryTagNames[tracking->Tag],
+		     tracking->Size,
+		     size);
+
+		return NULL;
+	}
+	void* returnPtr = newActualPtr + trackingOverhead;
+
+	// Update metadata and statistics.
+	struct AllocationT* newTracking = GetAllocationMetadata(returnPtr);
+	newTracking->Size               = size;
+	MemoryStats.TotalAllocatedBytes -= actualSize;
+	MemoryStats.TotalAllocatedBytes += newActualSize;
+	MemoryStats.AllocatedBytesByTag[newTracking->Tag] -= oldSize;
+	MemoryStats.AllocatedBytesByTag[newTracking->Tag] += size;
 
 	return returnPtr;
 }
@@ -167,12 +208,16 @@ void Memory_Free(void* ptr) {
 	if (tracking->Alignment == 0) {
 		Platform_Free(actualPtr);
 	} else {
-		Platform_AlignedFree(actualPtr);
+		Platform_FreeAligned(actualPtr);
 	}
 }
 
 void Memory_Copy(void* dst, const void* src, size_t bytes) {
 	Platform_MemCopy(dst, src, bytes);
+}
+
+void Memory_Move(void* dst, const void* src, size_t bytes) {
+	Platform_MemMove(dst, src, bytes);
 }
 
 void Memory_Set(void* dst, U8 value, size_t bytes) {

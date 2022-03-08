@@ -126,20 +126,36 @@ void* Platform_Alloc(size_t bytes) {
 	return malloc(bytes);
 }
 
-void* Platform_AlignedAlloc(size_t bytes, U8 align) {
+void* Platform_AllocAligned(size_t bytes, U8 align) {
 	return _aligned_malloc(bytes, align);
+}
+
+void* Platform_Realloc(void* ptr, size_t bytes) {
+	if (ptr == NULL) { return Platform_Alloc(bytes); }
+
+	return realloc(ptr, bytes);
+}
+
+void* Platform_ReallocAligned(void* ptr, U8 align, size_t bytes) {
+	if (ptr == NULL) { return Platform_AllocAligned(bytes, align); }
+
+	return _aligned_realloc(ptr, bytes, align);
 }
 
 void Platform_Free(void* ptr) {
 	free(ptr);
 }
 
-void Platform_AlignedFree(void* ptr) {
+void Platform_FreeAligned(void* ptr) {
 	_aligned_free(ptr);
 }
 
 void Platform_MemCopy(void* dst, const void* src, size_t bytes) {
 	memcpy(dst, src, bytes);
+}
+
+void Platform_MemMove(void* dst, const void* src, size_t bytes) {
+	memmove(dst, src, bytes);
 }
 
 void Platform_MemSet(void* ptr, U8 value, size_t bytes) {
