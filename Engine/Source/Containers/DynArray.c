@@ -1,4 +1,5 @@
 #include <Obsidian/Containers/DynArray.h>
+#include <Obsidian/Core/Logger.h>
 #include <Obsidian/Core/Memory.h>
 
 typedef struct DynArrayMetadataT {
@@ -47,24 +48,28 @@ void _DynArray_Destroy(void** dynArray) {
 }
 
 U64 _DynArray_Capacity(const void** dynArray) {
+	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	return meta->Capacity;
 }
 
 U64 _DynArray_Size(const void** dynArray) {
+	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	return meta->Size;
 }
 
 U64 _DynArray_Stride(const void** dynArray) {
+	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	return meta->Stride;
 }
 
 B8 _DynArray_Trim(void** dynArray) {
+	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	// If capacity equals size already, there's nothing we need to do!
@@ -87,6 +92,7 @@ B8 _DynArray_Trim(void** dynArray) {
 }
 
 B8 _DynArray_Resize(void** dynArray, U64 elementCount) {
+	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	if (meta->Size == elementCount) { return TRUE; }
@@ -114,6 +120,7 @@ B8 _DynArray_Resize(void** dynArray, U64 elementCount) {
 }
 
 B8 _DynArray_Reserve(void** dynArray, U64 elementCount) {
+	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	// Only reallocate if the requested size is larger than current. Shrinking must be handled by _DynArray_Trim().
@@ -133,6 +140,7 @@ B8 _DynArray_Reserve(void** dynArray, U64 elementCount) {
 }
 
 void _DynArray_Push(void** dynArray, const void* element) {
+	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	// Simply use the insert function to insert at the end of the array.
@@ -140,18 +148,18 @@ void _DynArray_Push(void** dynArray, const void* element) {
 }
 
 void _DynArray_Pop(void** dynArray, void* element) {
+	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
-	if (element != NULL) {
-		const void* ptr = (*dynArray) + (meta->Stride * (meta->Size - 1));
-		Memory_Copy(element, ptr, meta->Stride);
-	}
-
-	meta->Size--;
+	// Use the extract function to take from the end of the array.
+	_DynArray_Extract(dynArray, meta->Size - 1, element);
 }
 
 void _DynArray_Insert(void** dynArray, U64 index, const void* element) {
+	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
+
+	AssertMsg(index <= meta->Size, "DynArray insertion index is out of bounds!");
 
 	// First ensure we have the capacity to insert into the array.
 	if (meta->Capacity <= meta->Size) {
@@ -184,7 +192,11 @@ void _DynArray_Insert(void** dynArray, U64 index, const void* element) {
 }
 
 void _DynArray_Extract(void** dynArray, U64 index, void* element) {
+	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
+
+	AssertMsg(meta->Size > 0, "Attempting to extract from empty DynArray!");
+	AssertMsg(index < meta->Size, "DynArray extraction index is out of bounds!");
 
 	if (element != NULL) {
 		const void* ptr = (*dynArray) + (meta->Stride * index);
