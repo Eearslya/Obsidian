@@ -1,4 +1,5 @@
 #include <Obsidian/Core/Application.h>
+#include <Obsidian/Core/Clock.h>
 #include <Obsidian/Core/Event.h>
 #include <Obsidian/Core/Input.h>
 #include <Obsidian/Core/Logger.h>
@@ -8,6 +9,8 @@ struct ApplicationT {
 	PlatformState Platform;
 	ApplicationCallbacks Callbacks;
 	B8 Running;
+	Clock MainClock;
+	F64 LastUpdate;
 	void* UserData;
 };
 
@@ -73,26 +76,52 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 B8 Application_Run(Application app) {
 	AssertMsg(!app->Running, "Application is already running!");
 
+	const F64 targetFps = 1.0 / 60.0;
+
+	Clock_Start(&app->MainClock);
+	Clock_Update(&app->MainClock);
+	app->LastUpdate = app->MainClock.Elapsed;
+
+	F64 runtime   = 0.0;
+	U8 frameCount = 0;
+
 	B8 badShutdown = FALSE;
 	app->Running   = TRUE;
 	while (app->Running) {
+		Clock_Update(&app->MainClock);
+		const F64 now            = app->MainClock.Elapsed;
+		const F64 deltaTime      = now - app->LastUpdate;
+		const F64 frameStartTime = Platform_GetAbsoluteTime();
+
 		if (!Platform_Update(app->Platform)) { app->Running = FALSE; }
 
-		if (!app->Callbacks.Update(app, 0.0f)) {
+		if (!app->Callbacks.Update(app, deltaTime)) {
 			LogF("[Application] Error encountered in appliation update loop.");
 			app->Running = FALSE;
 			badShutdown  = TRUE;
 			break;
 		}
 
-		if (!app->Callbacks.Render(app, 0.0f)) {
+		if (!app->Callbacks.Render(app, deltaTime)) {
 			LogF("[Application] Error encountered in appliation render loop.");
 			app->Running = FALSE;
 			badShutdown  = TRUE;
 			break;
 		}
 
-		Input_Update(0.0);
+		Input_Update(deltaTime);
+
+		const F64 frameEndTime = Platform_GetAbsoluteTime();
+		const F64 frameTime    = frameEndTime - frameStartTime;
+		runtime += frameTime;
+		const F64 spareTime = targetFps - frameTime;
+		if (spareTime > 0.0) {
+			const U64 spareMs = spareTime * 1000;
+			if (spareMs > 1) { Platform_Sleep(spareMs - 1); }
+			frameCount++;
+		}
+
+		app->LastUpdate = now;
 	}
 	app->Running = FALSE;
 	app->Callbacks.Shutdown(app);
