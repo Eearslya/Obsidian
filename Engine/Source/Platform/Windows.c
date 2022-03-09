@@ -2,6 +2,7 @@
 
 #if OBSIDIAN_WINDOWS == 1
 #	include <Obsidian/Core/Logger.h>
+#	include <Obsidian/Core/Event.h>
 #	include <stdlib.h>
 #	include <stdio.h>
 #	define NOMINMAX
@@ -113,7 +114,11 @@ void Platform_Shutdown(PlatformState state) {
 B8 Platform_Update(PlatformState state) {
 	MSG message;
 	while (PeekMessageA(&message, NULL, 0, 0, PM_REMOVE)) {
-		if (message.message == WM_QUIT) { return FALSE; }
+		if (message.message == WM_QUIT) {
+			EventContext quit = {};
+			Event_Fire(EventCode_ApplicationQuit, state, quit);
+			return FALSE;
+		}
 
 		TranslateMessage(&message);
 		DispatchMessageA(&message);

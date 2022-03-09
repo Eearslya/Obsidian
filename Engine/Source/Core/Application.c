@@ -1,4 +1,5 @@
 #include <Obsidian/Core/Application.h>
+#include <Obsidian/Core/Event.h>
 #include <Obsidian/Core/Logger.h>
 #include <Obsidian/Platform/Platform.h>
 
@@ -41,6 +42,13 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 		return FALSE;
 	}
 
+	// Initialize the event system.
+	if (!Event_Initialize()) {
+		LogF("[Application] Failed to initialize Event system!");
+
+		return FALSE;
+	}
+
 	// Initialize the application.
 	if (!(*app)->Callbacks.Initialize(*app)) {
 		LogF("[Application] Application failed to initialize!");
@@ -78,6 +86,7 @@ B8 Application_Run(Application app) {
 	}
 	app->Running = FALSE;
 	app->Callbacks.Shutdown(app);
+	Event_Shutdown();
 	Platform_Shutdown(app->Platform);
 
 	return badShutdown == FALSE;
