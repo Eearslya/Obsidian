@@ -1,3 +1,5 @@
+/** @file
+ *  @brief Input subsystem */
 #pragma once
 
 #include <Obsidian/Defines.h>

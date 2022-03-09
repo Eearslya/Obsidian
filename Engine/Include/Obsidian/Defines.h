@@ -1,3 +1,5 @@
+/** @file
+ *  @brief Contains global typedefs and macro definitions for the engine */
 #pragma once
 
 // Integer typedefs

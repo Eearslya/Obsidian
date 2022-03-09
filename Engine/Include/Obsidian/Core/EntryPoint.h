@@ -1,3 +1,5 @@
+/** @file
+ *  @brief Engine entrypoint, contains main(). */
 #pragma once
 
 #include <Obsidian/Core/Application.h>
@@ -5,6 +7,7 @@
 #include <Obsidian/Core/Memory.h>
 #include <Obsidian/Defines.h>
 
+/** Function to be implemented by user application. */
 extern B8 GetApplicationInfo(ApplicationCreateInfo* createInfo);
 
 int main(int argc, const char** argv) {

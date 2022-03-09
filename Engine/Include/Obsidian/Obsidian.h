@@ -1,3 +1,5 @@
+/** @file
+ *  @brief Main header, contains all essential header files. */
 #pragma once
 
 #include <Obsidian/Containers/DynArray.h>

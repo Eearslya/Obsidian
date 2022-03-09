@@ -1,3 +1,5 @@
+/** @file
+ *  @brief Event subsystem */
 #pragma once
 
 #include <Obsidian/Defines.h>

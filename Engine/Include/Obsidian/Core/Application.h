@@ -1,3 +1,5 @@
+/** @file
+ *  @brief The main engine application */
 #pragma once
 
 #include <Obsidian/Defines.h>
