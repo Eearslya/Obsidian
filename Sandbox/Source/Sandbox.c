@@ -1,13 +1,27 @@
 #include <Obsidian/Obsidian.h>
 
 typedef struct GameStateT {
+	Application App;
 } GameState;
+
+B8 Game_OnKeyPressed(U16 code, void* sender, void* listener, EventContext evt, void* userData) {
+	GameState* game = (GameState*) userData;
+
+	const Key key = evt.Data.U16[0];
+	if (key == Key_Escape) { Application_Shutdown(game->App); }
+
+	return FALSE;
+}
 
 B8 Game_Initialize(Application app) {
 	LogI("Application initialized.");
 
 	GameState* state = Memory_Allocate(sizeof(GameState), MemoryTag_Game);
 	Application_SetUserData(app, state);
+
+	state->App = app;
+
+	Event_Register(EventCode_KeyPressed, state, Game_OnKeyPressed, state);
 
 	Memory_LogUsage();
 

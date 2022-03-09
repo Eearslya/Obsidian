@@ -23,13 +23,16 @@ typedef struct EventContextT {
 	} Data;
 } EventContext;
 
-enum { EventCode_ApplicationQuit = 0x1, EventCode_Resized = 0x2 };
+enum {
+	EventCode_ApplicationQuit = 0x1, /**< Application shutdown is requested. Return TRUE to cancel. */
+	EventCode_Resized         = 0x2  /**< Application window has been resized. */
+};
 
-typedef B8 (*EventHandlerFn)(U16 code, void* sender, void* listener, EventContext event);
+typedef B8 (*EventHandlerFn)(U16 code, void* sender, void* listener, EventContext event, void* userData);
 
 B8 Event_Initialize();
 void Event_Shutdown();
 
-OAPI B8 Event_Register(U16 code, void* listener, EventHandlerFn handler);
+OAPI B8 Event_Register(U16 code, void* listener, EventHandlerFn handler, void* userData);
 OAPI B8 Event_Unregister(U16 code, void* listener, EventHandlerFn handler);
 OAPI B8 Event_Fire(U16 code, void* sender, EventContext event);

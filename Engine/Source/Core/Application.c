@@ -103,6 +103,11 @@ B8 Application_Run(Application app) {
 	return badShutdown == FALSE;
 }
 
+void Application_Shutdown(Application app) {
+	EventContext evt;
+	if (Event_Fire(EventCode_ApplicationQuit, NULL, evt) == FALSE) { app->Running = FALSE; }
+}
+
 void Application_SetUserData(Application app, void* ptr) {
 	app->UserData = ptr;
 }

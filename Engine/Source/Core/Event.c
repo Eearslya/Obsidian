@@ -8,6 +8,7 @@
 typedef struct EventListener {
 	void* Listener;
 	EventHandlerFn Handler;
+	void* UserData;
 } EventListener;
 
 typedef struct EventCode {
@@ -34,7 +35,7 @@ void Event_Shutdown() {
 	}
 }
 
-B8 Event_Register(U16 code, void* listener, EventHandlerFn handler) {
+B8 Event_Register(U16 code, void* listener, EventHandlerFn handler, void* userData) {
 	if (EventSystem.Codes[code].Listeners == NULL) { EventSystem.Codes[code].Listeners = DynArray_Create(EventListener); }
 
 	EventListener* listeners = EventSystem.Codes[code].Listeners;
@@ -45,7 +46,7 @@ B8 Event_Register(U16 code, void* listener, EventHandlerFn handler) {
 		if (listeners[i].Listener == listener) { return FALSE; }
 	}
 
-	EventListener newListener = {.Listener = listener, .Handler = handler};
+	EventListener newListener = {.Listener = listener, .Handler = handler, .UserData = userData};
 	DynArray_Push(listeners, newListener);
 
 	return TRUE;
@@ -76,7 +77,7 @@ B8 Event_Fire(U16 code, void* sender, EventContext event) {
 
 	const U64 listenerCount = DynArray_Size(listeners);
 	for (U64 i = 0; i < listenerCount; ++i) {
-		if (listeners[i].Handler(code, sender, listeners[i].Listener, event)) { return TRUE; }
+		if (listeners[i].Handler(code, sender, listeners[i].Listener, event, listeners[i].UserData)) { return TRUE; }
 	}
 
 	return FALSE;

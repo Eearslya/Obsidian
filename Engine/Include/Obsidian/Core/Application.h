@@ -41,6 +41,12 @@ OAPI B8 Application_Create(const ApplicationCreateInfo* createInfo, Application*
 OAPI B8 Application_Run(Application app);
 
 /**
+ * Request a shutdown of the application.
+ * @param app The application to shut down.
+ */
+OAPI void Application_Shutdown(Application app);
+
+/**
  * Set the UserData pointer.
  * @param app The application to save to.
  * @param ptr The pointer to save.

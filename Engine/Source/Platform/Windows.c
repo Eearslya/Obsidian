@@ -2,6 +2,7 @@
 
 #if OBSIDIAN_WINDOWS == 1
 #	include <Obsidian/Core/Logger.h>
+#	include <Obsidian/Core/Input.h>
 #	include <Obsidian/Core/Event.h>
 #	include <stdlib.h>
 #	include <stdio.h>
@@ -199,6 +200,51 @@ void Platform_Sleep(U64 ms) {
 
 static LRESULT CALLBACK HandleMessage(HWND hwnd, U32 msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
+		case WM_MOUSEMOVE: {
+			const I32 x = GET_X_LPARAM(lParam);
+			const I32 y = GET_Y_LPARAM(lParam);
+			Input_ProcessMouseMove(x, y);
+			break;
+		}
+		case WM_LBUTTONDOWN:
+		case WM_MBUTTONDOWN:
+		case WM_RBUTTONDOWN:
+		case WM_LBUTTONUP:
+		case WM_MBUTTONUP:
+		case WM_RBUTTONUP: {
+			const B8 press  = msg == WM_LBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_RBUTTONDOWN;
+			MouseButton btn = MouseButton_Count;
+			switch (msg) {
+				case WM_LBUTTONDOWN:
+				case WM_LBUTTONUP:
+					btn = MouseButton_Left;
+					break;
+				case WM_MBUTTONDOWN:
+				case WM_MBUTTONUP:
+					btn = MouseButton_Middle;
+					break;
+				case WM_RBUTTONDOWN:
+				case WM_RBUTTONUP:
+					btn = MouseButton_Right;
+					break;
+			}
+			if (btn != MouseButton_Count) { Input_ProcessMouseButton(btn, press); }
+			break;
+		}
+		case WM_KEYDOWN:
+		case WM_KEYUP:
+		case WM_SYSKEYDOWN:
+		case WM_SYSKEYUP: {
+			const B8 press = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN;
+			const Key key  = (U16) wParam;
+			Input_ProcessKey(key, press);
+			break;
+		}
+		case WM_MOUSEWHEEL: {
+			const I8 delta = GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA;
+			Input_ProcessScroll(delta);
+			break;
+		}
 		case WM_CLOSE:
 			PostQuitMessage(0);
 			break;
