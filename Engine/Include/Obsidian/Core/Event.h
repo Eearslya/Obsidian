@@ -28,11 +28,11 @@ enum {
 	EventCode_Resized         = 0x2  /**< Application window has been resized. */
 };
 
-typedef B8 (*EventHandlerFn)(U16 code, void* sender, void* listener, EventContext event, void* userData);
+typedef B8 (*EventHandlerFn)(U16 code, void* sender, void* listener, EventContext event);
 
 B8 Event_Initialize();
 void Event_Shutdown();
 
-OAPI B8 Event_Register(U16 code, void* listener, EventHandlerFn handler, void* userData);
+OAPI B8 Event_Register(U16 code, void* listener, EventHandlerFn handler);
 OAPI B8 Event_Unregister(U16 code, void* listener, EventHandlerFn handler);
 OAPI B8 Event_Fire(U16 code, void* sender, EventContext event);

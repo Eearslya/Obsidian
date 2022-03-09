@@ -4,8 +4,8 @@ typedef struct GameStateT {
 	Application App;
 } GameState;
 
-B8 Game_OnKeyPressed(U16 code, void* sender, void* listener, EventContext evt, void* userData) {
-	GameState* game = (GameState*) userData;
+B8 Game_OnKeyPressed(U16 code, void* sender, void* listener, EventContext evt) {
+	GameState* game = (GameState*) listener;
 
 	const Key key = evt.Data.U16[0];
 	if (key == Key_Escape) { Application_Shutdown(game->App); }
@@ -21,7 +21,7 @@ B8 Game_Initialize(Application app) {
 
 	state->App = app;
 
-	Event_Register(EventCode_KeyPressed, state, Game_OnKeyPressed, state);
+	Event_Register(EventCode_KeyPressed, state, Game_OnKeyPressed);
 
 	Memory_LogUsage();
 
