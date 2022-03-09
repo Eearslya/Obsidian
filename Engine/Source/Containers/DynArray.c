@@ -7,13 +7,13 @@ typedef struct DynArrayMetadataT {
 	U64 Stride;    // The size of each element.
 } DynArrayMetadata;
 
+// If we attempt to push to a dynamic array with no remaining capacity, mutltiply the capacity by this number.
+static const F32 DynArrayResizeFactor = 1.5f;
+
 // Get a pointer to the dynamic array's metadata.
 static DynArrayMetadata* DynArrayGetMetadata(const void* dynArray) {
 	return (DynArrayMetadata*) (dynArray - sizeof(DynArrayMetadata));
 }
-
-// If we attempt to push to a dynamic array with no remaining capacity, mutltiply the capacity by this number.
-static const F32 DynArrayResizeFactor = 1.5f;
 
 void* _DynArray_Create(U64 elementSize, U64 elementCount) {
 	const size_t metadataSize = sizeof(DynArrayMetadata);
@@ -22,12 +22,16 @@ void* _DynArray_Create(U64 elementSize, U64 elementCount) {
 
 	void* dynArray = Memory_Allocate(totalSize, MemoryTag_DynamicArray);
 	if (dynArray == NULL) { return NULL; }
+
+	// Zero-initialize all of the elements for convenience and safety.
 	Memory_Zero(dynArray, totalSize);
 
 	// Metadata is placed just before the dynamic array. The user is given the pointer just after the metadata ends.
+	// This allows the user to use the pointer returned like a normal array of objects.
 	void* returnPtr        = dynArray + metadataSize;
 	DynArrayMetadata* meta = DynArrayGetMetadata(returnPtr);
 
+	// Update our metadata.
 	meta->Capacity = elementCount;
 	meta->Size     = 0;
 	meta->Stride   = elementSize;
@@ -37,6 +41,8 @@ void* _DynArray_Create(U64 elementSize, U64 elementCount) {
 
 void _DynArray_Destroy(void** dynArray) {
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
+
+	// Pointer to the start of metadata is the same pointer we originally allocated.
 	Memory_Free(meta);
 }
 
@@ -69,6 +75,7 @@ B8 _DynArray_Trim(void** dynArray) {
 	const size_t totalSize    = metadataSize + arraySize;
 
 	DynArrayMetadata* newMeta = Memory_Reallocate(meta, totalSize);
+	// If we fail to reallocate, we return NULL here. The original dynamic array is still valid.
 	if (newMeta == NULL) { return FALSE; }
 
 	// Update metadata.
@@ -92,12 +99,14 @@ B8 _DynArray_Resize(void** dynArray, U64 elementCount) {
 		meta = DynArrayGetMetadata(*dynArray);
 	}
 
-	// Zero-initialize the new elements.
-	const U64 newElements = elementCount - meta->Size;   // Number of new elements
-	const U64 newBytes    = newElements * meta->Stride;  // Number of bytes those elements take up
-	void* firstEmpty =
-		(*dynArray) + (meta->Stride * meta->Size);  // Pointer to the first new element that needs to be initialized
-	Memory_Zero(firstEmpty, newBytes);
+	// If we have grown in size, we will zero-initialize all of the new elements.
+	if (elementCount > meta->Size) {
+		const U64 newElements = elementCount - meta->Size;   // Number of new elements
+		const U64 newBytes    = newElements * meta->Stride;  // Number of bytes those elements take up
+		void* firstEmpty =
+			(*dynArray) + (meta->Stride * meta->Size);  // Pointer to the first new element that needs to be initialized
+		Memory_Zero(firstEmpty, newBytes);
+	}
 
 	meta->Size = elementCount;
 
@@ -107,6 +116,7 @@ B8 _DynArray_Resize(void** dynArray, U64 elementCount) {
 B8 _DynArray_Reserve(void** dynArray, U64 elementCount) {
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
+	// Only reallocate if the requested size is larger than current. Shrinking must be handled by _DynArray_Trim().
 	if (meta->Capacity >= elementCount) { return TRUE; }
 
 	const size_t metadataSize = sizeof(DynArrayMetadata);
@@ -125,6 +135,7 @@ B8 _DynArray_Reserve(void** dynArray, U64 elementCount) {
 void _DynArray_Push(void** dynArray, const void* element) {
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
+	// Simply use the insert function to insert at the end of the array.
 	_DynArray_Insert(dynArray, meta->Size, element);
 }
 
@@ -144,6 +155,8 @@ void _DynArray_Insert(void** dynArray, U64 index, const void* element) {
 
 	// First ensure we have the capacity to insert into the array.
 	if (meta->Capacity <= meta->Size) {
+		// If not, use the resize factor to determine our new size. The resize factor is used rather than simply
+		// incrementing by one to reduce the number of copies needed during times of many insertions back-to-back.
 		const U64 newCount = (F32) meta->Capacity * DynArrayResizeFactor;
 		const B8 resized   = _DynArray_Reserve(dynArray, newCount);
 		if (!resized) { return; }
@@ -160,6 +173,7 @@ void _DynArray_Insert(void** dynArray, U64 index, const void* element) {
 		Memory_Move(newPosition, oldPosition, bytesToMove);  // Memory Move is required as the two blocks overlap
 	}
 
+	// Finally, copy in our new value.
 	void* ptr = (*dynArray) + (meta->Stride * index);
 	Memory_Copy(ptr, element, meta->Stride);
 
