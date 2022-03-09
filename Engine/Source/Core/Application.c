@@ -1,5 +1,6 @@
 #include <Obsidian/Core/Application.h>
 #include <Obsidian/Core/Event.h>
+#include <Obsidian/Core/Input.h>
 #include <Obsidian/Core/Logger.h>
 #include <Obsidian/Platform/Platform.h>
 
@@ -49,6 +50,13 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 		return FALSE;
 	}
 
+	// Initialize the input system.
+	if (!Input_Initialize()) {
+		LogF("[Application] Failed to initialize Input system!");
+
+		return FALSE;
+	}
+
 	// Initialize the application.
 	if (!(*app)->Callbacks.Initialize(*app)) {
 		LogF("[Application] Application failed to initialize!");
@@ -83,9 +91,12 @@ B8 Application_Run(Application app) {
 			badShutdown  = TRUE;
 			break;
 		}
+
+		Input_Update(0.0);
 	}
 	app->Running = FALSE;
 	app->Callbacks.Shutdown(app);
+	Input_Shutdown();
 	Event_Shutdown();
 	Platform_Shutdown(app->Platform);
 
