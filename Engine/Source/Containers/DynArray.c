@@ -157,8 +157,11 @@ void _DynArray_Insert(void** dynArray, U64 index, const void* element) {
 	if (meta->Capacity <= meta->Size) {
 		// If not, use the resize factor to determine our new size. The resize factor is used rather than simply
 		// incrementing by one to reduce the number of copies needed during times of many insertions back-to-back.
-		const U64 newCount = (F32) meta->Capacity * DynArrayResizeFactor;
-		const B8 resized   = _DynArray_Reserve(dynArray, newCount);
+		U64 newCount = (F32) meta->Capacity * DynArrayResizeFactor;
+		// Because of integer rounding, it is possible that the previous multiplication returns the exact same capacity.
+		// Therefore, we need to make sure we at least increase by 1 no matter what.
+		if (newCount == meta->Capacity) { newCount = meta->Capacity + 1; }
+		const B8 resized = _DynArray_Reserve(dynArray, newCount);
 		if (!resized) { return; }
 		// Update metadata since we have reallocated.
 		meta = DynArrayGetMetadata(*dynArray);
