@@ -18,6 +18,16 @@ static const U32 DynArray_DefaultCapacity = 8;
 OAPI void* _DynArray_Create(U64 elementSize, U64 elementCapacity);
 
 /**
+ * Create a dynamic array with a predetermined size. Users should use the helper macro DynArray_CreateWithSize() instead
+ * of this function directly.
+ * @param elementSize The size of each element, in bytes.
+ * @param elementCount The amount of elements the dynamic array will hold.
+ * @return NULL upon allocation failure, otherwise a pointer to the created dynamic array.
+ * @sa DynArray_Create(), DynArray_CreateWithCapacity()
+ */
+OAPI void* _DynArray_CreateSized(U64 elementSize, U64 elementCount);
+
+/**
  * Destroys a dynamic array.
  * @param dynArray The dynamic array to destroy.
  */
@@ -113,6 +123,14 @@ OAPI void _DynArray_Extract(void** dynArray, U64 index, void* element);
  * @return The newly created dynamic array.
  */
 #define DynArray_CreateWithCapacity(type, count) _DynArray_Create(sizeof(type), count)
+
+/**
+ * Create a dynamic array with a specified size.
+ * @param type The type the dynamic array will contain.
+ * @param count The amount of elements the dynamic array will hold.
+ * @return The newly created dynamic array.
+ */
+#define DynArray_CreateWithSize(type, count) _DynArray_CreateSized(sizeof(type), count)
 
 /** Convenience macro for _DynArray_Destroy(). */
 #define DynArray_Destroy(dynArray) _DynArray_Destroy((void**) &dynArray)

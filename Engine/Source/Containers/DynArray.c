@@ -40,6 +40,13 @@ void* _DynArray_Create(U64 elementSize, U64 elementCount) {
 	return returnPtr;
 }
 
+void* _DynArray_CreateSized(U64 elementSize, U64 elementCount) {
+	void* dynArray = _DynArray_Create(elementSize, elementCount);
+	_DynArray_Resize(&dynArray, elementCount);
+
+	return dynArray;
+}
+
 void _DynArray_Destroy(void** dynArray) {
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
