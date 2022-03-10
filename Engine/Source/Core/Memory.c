@@ -162,10 +162,8 @@ void* Memory_Reallocate(void* ptr, size_t size) {
 	// Update metadata and statistics.
 	struct AllocationT* newTracking = GetAllocationMetadata(returnPtr);
 	newTracking->Size               = size;
-	MemoryStats.TotalAllocatedBytes -= actualSize;
-	MemoryStats.TotalAllocatedBytes += newActualSize;
-	MemoryStats.AllocatedBytesByTag[newTracking->Tag] -= oldSize;
-	MemoryStats.AllocatedBytesByTag[newTracking->Tag] += size;
+	MemoryStats.TotalAllocatedBytes += (newActualSize - actualSize);
+	MemoryStats.AllocatedBytesByTag[newTracking->Tag] += (size - oldSize);
 
 	return returnPtr;
 }
@@ -202,7 +200,7 @@ void Memory_Free(void* ptr) {
 	MemoryStats.TotalAllocatedBytes -= actualSize;
 	MemoryStats.AllocationsByTag[tracking->Tag]--;
 	MemoryStats.AllocatedBytesByTag[MemoryTag_Internal] -= trackingOverhead;
-	MemoryStats.AllocatedBytesByTag[tracking->Tag] += tracking->Size;
+	MemoryStats.AllocatedBytesByTag[tracking->Tag] -= tracking->Size;
 
 	// Automatically deduce whether the allocation was aligned.
 	if (tracking->Alignment == 0) {

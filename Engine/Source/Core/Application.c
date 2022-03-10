@@ -4,6 +4,7 @@
 #include <Obsidian/Core/Input.h>
 #include <Obsidian/Core/Logger.h>
 #include <Obsidian/Platform/Platform.h>
+#include <Obsidian/Renderer/Renderer.h>
 
 struct ApplicationT {
 	PlatformState Platform;
@@ -60,6 +61,13 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 		return FALSE;
 	}
 
+	// Initialize the rendering system.
+	if (!Renderer_Initialize(createInfo->Name, (*app)->Platform)) {
+		LogF("[Application] Failed to initialize Rendering system!");
+
+		return FALSE;
+	}
+
 	// Initialize the application.
 	if (!(*app)->Callbacks.Initialize(*app)) {
 		LogF("[Application] Application failed to initialize!");
@@ -109,6 +117,9 @@ B8 Application_Run(Application app) {
 			break;
 		}
 
+		RenderPacket packet = {.DeltaTime = deltaTime};
+		Renderer_DrawFrame(&packet);
+
 		Input_Update(deltaTime);
 
 		const F64 frameEndTime = Platform_GetAbsoluteTime();
@@ -125,6 +136,7 @@ B8 Application_Run(Application app) {
 	}
 	app->Running = FALSE;
 	app->Callbacks.Shutdown(app);
+	Renderer_Shutdown();
 	Input_Shutdown();
 	Event_Shutdown();
 	Platform_Shutdown(app->Platform);
