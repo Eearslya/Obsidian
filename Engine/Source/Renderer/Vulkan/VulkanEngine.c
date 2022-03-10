@@ -1,7 +1,12 @@
+#include <Obsidian/Containers/DynArray.h>
 #include <Obsidian/Core/Logger.h>
 #include <Obsidian/Core/Memory.h>
 #include <Obsidian/Renderer/Vulkan/Common.h>
+#include <Obsidian/Renderer/Vulkan/VulkanDebug.h>
 #include <Obsidian/Renderer/Vulkan/VulkanEngine.h>
+#include <Obsidian/Renderer/Vulkan/VulkanInstance.h>
+#include <Obsidian/Renderer/Vulkan/VulkanPlatform.h>
+#include <Obsidian/Renderer/Vulkan/VulkanStrings.h>
 
 static VulkanContext Vulkan;
 
@@ -18,6 +23,33 @@ static void Vulkan_Free(void* pUserData, void* pMemory) {
 	Memory_Free(pMemory);
 }
 
+void Vulkan_ReportFailure(const char* expr, VkResult result, const char* msg, const char* file, int line) {
+	const char* resultName = VulkanString_VkResult(result);
+
+	LogF("[Vulkan] Vulkan function failed with %s: %s", resultName, expr);
+	if (msg != NULL) { LogF("[Vulkan]     %s", msg); }
+	LogF("[Vulkan]     At: %s:%d", file, line);
+
+	Assert(result == VK_SUCCESS);
+}
+
+static B8 Vulkan_LoadGlobalFunctions() {
+#define LoadGlobalFn(fn)                                                                         \
+	do {                                                                                           \
+		if ((Vulkan.vk.fn = (PFN_vk##fn) vkGetInstanceProcAddr(VK_NULL_HANDLE, "vk" #fn)) == NULL) { \
+			LogE("[VulkanEngine] Failed to load global function '%s'!", "vk" #fn);                     \
+			return FALSE;                                                                              \
+		}                                                                                            \
+	} while (0)
+	LoadGlobalFn(EnumerateInstanceVersion);
+	LoadGlobalFn(EnumerateInstanceExtensionProperties);
+	LoadGlobalFn(EnumerateInstanceLayerProperties);
+	LoadGlobalFn(CreateInstance);
+#undef LoadGlobalFn
+
+	return TRUE;
+}
+
 B8 RenderEngine_Vulkan_Initialize(RenderEngine engine, const char* appName, struct PlatformStateT* platform) {
 	Memory_Zero(&Vulkan, sizeof(struct VulkanContextT));
 
@@ -29,73 +61,33 @@ B8 RenderEngine_Vulkan_Initialize(RenderEngine engine, const char* appName, stru
 	}
 
 	// Load global Vulkan functions
-	{
-#define LoadGlobalFn(fn)                                                                         \
-	do {                                                                                           \
-		if ((Vulkan.vk.fn = (PFN_vk##fn) vkGetInstanceProcAddr(VK_NULL_HANDLE, "vk" #fn)) == NULL) { \
-			LogE("[VulkanEngine] Failed to load global function '%s'!", "vk" #fn);                     \
-			return FALSE;                                                                              \
-		}                                                                                            \
-	} while (0)
-		LoadGlobalFn(EnumerateInstanceVersion);
-		LoadGlobalFn(EnumerateInstanceExtensionProperties);
-		LoadGlobalFn(EnumerateInstanceLayerProperties);
-		LoadGlobalFn(CreateInstance);
-#undef LoadGlobalFn
-	}
+	if (!Vulkan_LoadGlobalFunctions()) { return FALSE; }
 
-	// Find Vulkan instance version
-	U32 instanceVersion = 0;
-	{
-		if (Vulkan.vk.EnumerateInstanceVersion(&instanceVersion) != VK_SUCCESS) {
-			LogE("[VulkanEngine] Failed to fetch Vulkan instance version!");
-			return FALSE;
-		}
-		LogI("[VulkanEngine] Vulkan Instance Version %d.%d.%d",
-		     VK_VERSION_MAJOR(instanceVersion),
-		     VK_VERSION_MINOR(instanceVersion),
-		     VK_VERSION_PATCH(instanceVersion));
-	}
+	// Gather required instance extensions
+	const char** instanceExtensions = DynArray_Create(const char*);
+	Platform_Vulkan_GetRequiredInstanceExtensions((DynArrayT) &instanceExtensions);
 
 	// Create instance
-	{
-		const VkApplicationInfo appInfo       = {.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-		                                         .pNext              = NULL,
-		                                         .pApplicationName   = appName,
-		                                         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-		                                         .pEngineName        = "Obsidian",
-		                                         .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
-		                                         .apiVersion         = VK_API_VERSION_1_0};
-		const VkInstanceCreateInfo instanceCI = {.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-		                                         .pNext                   = NULL,
-		                                         .flags                   = 0,
-		                                         .pApplicationInfo        = &appInfo,
-		                                         .enabledLayerCount       = 0,
-		                                         .ppEnabledLayerNames     = NULL,
-		                                         .enabledExtensionCount   = 0,
-		                                         .ppEnabledExtensionNames = NULL};
-		if (Vulkan.vk.CreateInstance(&instanceCI, &Vulkan.Allocator, &Vulkan.Instance) != VK_SUCCESS) {
-			LogE("[VulkanEngine] Failed to create Vulkan instance!");
-			return FALSE;
-		}
-		LogD("[VulkanEngine] Instance created.");
-	}
+	const B8 instanceCreated = VulkanInstance_Create(&Vulkan, (ConstDynArrayT) &instanceExtensions) == VK_SUCCESS;
+	DynArray_Destroy(&instanceExtensions);
+	if (!instanceCreated) { return FALSE; }
 
-#define LoadInstanceFn(fn)                                                                        \
-	do {                                                                                            \
-		if ((Vulkan.vk.fn = (PFN_vk##fn) vkGetInstanceProcAddr(Vulkan.Instance, "vk" #fn)) == NULL) { \
-			LogE("[VulkanEngine] Failed to load instance function '%s'!", "vk" #fn);                    \
-			return FALSE;                                                                               \
-		}                                                                                             \
-	} while (0)
-	LoadInstanceFn(DestroyInstance);
-#undef LoadInstanceFn
+	// Create debug messenger, if applicable
+	if (Vulkan.Validation) {
+		if (VulkanDebug_CreateMessenger(&Vulkan) != VK_SUCCESS) {
+			LogW("[Vulkan] Failed to create Vulkan debug messenger.");
+			Vulkan.Validation = FALSE;
+		}
+	}
 
 	return TRUE;
 }
 
 void RenderEngine_Vulkan_Shutdown(RenderEngine engine) {
-	if (Vulkan.Instance) { Vulkan.vk.DestroyInstance(Vulkan.Instance, &Vulkan.Allocator); }
+	if (Vulkan.Instance) {
+		if (Vulkan.Validation) { VulkanDebug_DestroyMessenger(&Vulkan); }
+		VulkanInstance_Destroy(&Vulkan);
+	}
 }
 
 B8 RenderEngine_Vulkan_BeginFrame(RenderEngine engine, F64 deltaTime) {

@@ -4,4 +4,5 @@ target_sources(Obsidian-Engine PRIVATE
 	Event.c
 	Input.c
 	Logger.c
-	Memory.c)
+	Memory.c
+	String.c)

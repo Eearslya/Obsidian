@@ -47,35 +47,35 @@ void* _DynArray_CreateSized(U64 elementSize, U64 elementCount) {
 	return dynArray;
 }
 
-void _DynArray_Destroy(void** dynArray) {
+void _DynArray_Destroy(DynArrayT dynArray) {
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	// Pointer to the start of metadata is the same pointer we originally allocated.
 	Memory_Free(meta);
 }
 
-U64 _DynArray_Capacity(const void** dynArray) {
+U64 _DynArray_Capacity(ConstDynArrayT dynArray) {
 	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	return meta->Capacity;
 }
 
-U64 _DynArray_Size(const void** dynArray) {
+U64 _DynArray_Size(ConstDynArrayT dynArray) {
 	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	return meta->Size;
 }
 
-U64 _DynArray_Stride(const void** dynArray) {
+U64 _DynArray_Stride(ConstDynArrayT dynArray) {
 	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
 	return meta->Stride;
 }
 
-B8 _DynArray_Trim(void** dynArray) {
+B8 _DynArray_Trim(DynArrayT dynArray) {
 	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
@@ -98,7 +98,7 @@ B8 _DynArray_Trim(void** dynArray) {
 	return TRUE;
 }
 
-B8 _DynArray_Resize(void** dynArray, U64 elementCount) {
+B8 _DynArray_Resize(DynArrayT dynArray, U64 elementCount) {
 	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
@@ -126,7 +126,7 @@ B8 _DynArray_Resize(void** dynArray, U64 elementCount) {
 	return TRUE;
 }
 
-B8 _DynArray_Reserve(void** dynArray, U64 elementCount) {
+B8 _DynArray_Reserve(DynArrayT dynArray, U64 elementCount) {
 	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
@@ -146,7 +146,7 @@ B8 _DynArray_Reserve(void** dynArray, U64 elementCount) {
 	return TRUE;
 }
 
-void _DynArray_Push(void** dynArray, const void* element) {
+void _DynArray_Push(DynArrayT dynArray, const void* element) {
 	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
@@ -154,7 +154,7 @@ void _DynArray_Push(void** dynArray, const void* element) {
 	_DynArray_Insert(dynArray, meta->Size, element);
 }
 
-void _DynArray_Pop(void** dynArray, void* element) {
+void _DynArray_Pop(DynArrayT dynArray, void* element) {
 	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
@@ -162,7 +162,7 @@ void _DynArray_Pop(void** dynArray, void* element) {
 	_DynArray_Extract(dynArray, meta->Size - 1, element);
 }
 
-void _DynArray_Insert(void** dynArray, U64 index, const void* element) {
+void _DynArray_Insert(DynArrayT dynArray, U64 index, const void* element) {
 	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 
@@ -198,7 +198,7 @@ void _DynArray_Insert(void** dynArray, U64 index, const void* element) {
 	meta->Size++;
 }
 
-void _DynArray_Extract(void** dynArray, U64 index, void* element) {
+void _DynArray_Extract(DynArrayT dynArray, U64 index, void* element) {
 	Assert(dynArray && *dynArray);
 	DynArrayMetadata* meta = DynArrayGetMetadata(*dynArray);
 

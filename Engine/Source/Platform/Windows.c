@@ -4,6 +4,8 @@
 #	include <Obsidian/Core/Logger.h>
 #	include <Obsidian/Core/Input.h>
 #	include <Obsidian/Core/Event.h>
+#	include <Obsidian/Renderer/Vulkan/VulkanPlatform.h>
+#	include <Obsidian/Containers/DynArray.h>
 #	include <stdlib.h>
 #	include <stdio.h>
 #	define NOMINMAX
@@ -252,5 +254,10 @@ static LRESULT CALLBACK HandleMessage(HWND hwnd, U32 msg, WPARAM wParam, LPARAM 
 			return 1;
 	}
 	return DefWindowProcA(hwnd, msg, wParam, lParam);
+}
+
+void Platform_Vulkan_GetRequiredInstanceExtensions(DynArrayT extensionNames) {
+	DynArray_PushValue(extensionNames, &"VK_KHR_surface");
+	DynArray_PushValue(extensionNames, &"VK_KHR_win32_surface");
 }
 #endif

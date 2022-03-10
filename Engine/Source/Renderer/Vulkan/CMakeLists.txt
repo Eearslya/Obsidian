@@ -1,2 +1,5 @@
 target_sources(Obsidian-Engine PRIVATE
-	VulkanEngine.c)
+	VulkanDebug.c
+	VulkanEngine.c
+	VulkanInstance.c
+	VulkanStrings.c)

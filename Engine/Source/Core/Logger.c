@@ -19,18 +19,22 @@ void Logger_ReportAssertion(const char* expr, const char* msg, const char* file,
 
 void Logger_Output(LogLevel level, const char* fmt, ...) {
 	static char msg[16384];
-	char* output = &msg[128];
 
+	// Determine how much space the tag is going to take up.
+	const I32 tagLen = snprintf(msg, sizeof(msg), "[%s] ", LogLevel_Names[level]);
+
+	// Print out the formatted message, leaving a gap for the tag we just made.
 	__builtin_va_list args;
 	va_start(args, fmt);
-	vsnprintf(msg, sizeof(msg), fmt, args);
+	const I32 msgLen = vsnprintf(msg + tagLen, sizeof(msg) - tagLen, fmt, args);
 	va_end(args);
 
-	snprintf(output, sizeof(msg) - 128, "[%s] %s\r\n", LogLevel_Names[level], msg);
+	// Output our final newline at the end
+	snprintf(msg + tagLen + msgLen, sizeof(msg) - tagLen - msgLen, "\r\n");
 
 	if (level > LogLevel_Error) {
-		Platform_ConsoleOut(output);
+		Platform_ConsoleOut(msg);
 	} else {
-		Platform_ConsoleError(output);
+		Platform_ConsoleError(msg);
 	}
 }

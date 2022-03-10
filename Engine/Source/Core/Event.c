@@ -29,7 +29,7 @@ B8 Event_Initialize() {
 void Event_Shutdown() {
 	for (U64 i = 0; i < Event_MaxEventCodes; ++i) {
 		EventListener* listeners = EventSystem.Codes[i].Listeners;
-		if (listeners) { DynArray_Destroy(listeners); }
+		if (listeners) { DynArray_Destroy(&listeners); }
 		EventSystem.Codes[i].Listeners = NULL;
 	}
 }
@@ -39,14 +39,14 @@ B8 Event_Register(U16 code, void* listener, EventHandlerFn handler) {
 
 	EventListener* listeners = EventSystem.Codes[code].Listeners;
 
-	const U64 listenerCount = DynArray_Size(listeners);
+	const U64 listenerCount = DynArray_Size(&listeners);
 	for (U64 i = 0; i < listenerCount; ++i) {
 		// Duplicate registration, return failure.
 		if (listeners[i].Listener == listener) { return FALSE; }
 	}
 
 	EventListener newListener = {.Listener = listener, .Handler = handler};
-	DynArray_Push(listeners, newListener);
+	DynArray_Push(&listeners, newListener);
 
 	return TRUE;
 }
@@ -56,12 +56,12 @@ B8 Event_Unregister(U16 code, void* listener, EventHandlerFn handler) {
 
 	if (listeners == NULL) { return FALSE; }
 
-	const U64 listenerCount = DynArray_Size(listeners);
+	const U64 listenerCount = DynArray_Size(&listeners);
 	if (listenerCount == 0) { return FALSE; }
 
 	for (U64 i = 0; i < listenerCount; ++i) {
 		if (listeners[i].Listener == listener && listeners[i].Handler == handler) {
-			DynArray_Extract(listeners, i, NULL);
+			DynArray_Extract(&listeners, i, NULL);
 			return TRUE;
 		}
 	}
@@ -74,7 +74,7 @@ B8 Event_Fire(U16 code, void* sender, EventContext event) {
 
 	if (listeners == NULL) { return FALSE; }
 
-	const U64 listenerCount = DynArray_Size(listeners);
+	const U64 listenerCount = DynArray_Size(&listeners);
 	for (U64 i = 0; i < listenerCount; ++i) {
 		if (listeners[i].Handler(code, sender, listeners[i].Listener, event)) { return TRUE; }
 	}
