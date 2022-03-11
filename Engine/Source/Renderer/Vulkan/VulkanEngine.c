@@ -80,11 +80,21 @@ B8 RenderEngine_Vulkan_Initialize(RenderEngine engine, const char* appName, stru
 		}
 	}
 
+	// Create platform surface
+	const B8 surfaceCreated = Platform_Vulkan_CreateSurface(platform, &Vulkan);
+	if (!surfaceCreated) {
+		LogE("[Vulkan] Failed to create Vulkan surface!");
+
+		return FALSE;
+	}
+	LogD("[Vulkan] Surface created.");
+
 	return TRUE;
 }
 
 void RenderEngine_Vulkan_Shutdown(RenderEngine engine) {
 	if (Vulkan.Instance) {
+		if (Vulkan.Surface) { Vulkan.vk.DestroySurfaceKHR(Vulkan.Instance, Vulkan.Surface, &Vulkan.Allocator); }
 		if (Vulkan.Validation) { VulkanDebug_DestroyMessenger(&Vulkan); }
 		VulkanInstance_Destroy(&Vulkan);
 	}

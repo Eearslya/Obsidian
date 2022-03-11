@@ -4,6 +4,7 @@
 #	include <Obsidian/Core/Logger.h>
 #	include <Obsidian/Core/Input.h>
 #	include <Obsidian/Core/Event.h>
+#	include <Obsidian/Renderer/Vulkan/Common.h>
 #	include <Obsidian/Renderer/Vulkan/VulkanPlatform.h>
 #	include <Obsidian/Containers/DynArray.h>
 #	include <stdlib.h>
@@ -13,6 +14,7 @@
 #	include <malloc.h>
 #	include <Windows.h>
 #	include <WindowsX.h>
+#	include <vulkan/vulkan_win32.h>
 
 struct PlatformStateT {
 	HINSTANCE Instance;
@@ -259,5 +261,24 @@ static LRESULT CALLBACK HandleMessage(HWND hwnd, U32 msg, WPARAM wParam, LPARAM 
 void Platform_Vulkan_GetRequiredInstanceExtensions(DynArrayT extensionNames) {
 	DynArray_PushValue(extensionNames, &"VK_KHR_surface");
 	DynArray_PushValue(extensionNames, &"VK_KHR_win32_surface");
+}
+
+B8 Platform_Vulkan_CreateSurface(struct PlatformStateT* platform, struct VulkanContextT* context) {
+	PFN_vkCreateWin32SurfaceKHR fn =
+		(PFN_vkCreateWin32SurfaceKHR) vkGetInstanceProcAddr(context->Instance, "vkCreateWin32SurfaceKHR");
+	if (!fn) { return FALSE; }
+
+	const VkWin32SurfaceCreateInfoKHR surfaceCI = {.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+	                                               .pNext     = NULL,
+	                                               .flags     = 0,
+	                                               .hinstance = platform->Instance,
+	                                               .hwnd      = platform->Window};
+	VkSurfaceKHR surface                        = VK_NULL_HANDLE;
+	const VkResult createResult                 = fn(context->Instance, &surfaceCI, &context->Allocator, &surface);
+	if (createResult != VK_SUCCESS) { return FALSE; }
+
+	context->Surface = surface;
+
+	return TRUE;
 }
 #endif

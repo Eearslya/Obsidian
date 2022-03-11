@@ -13,6 +13,13 @@ typedef struct VulkanFunctionsT {
 	// Instance Functions
 	PFN_vkDestroyInstance DestroyInstance;
 
+	// VK_KHR_surface
+	PFN_vkDestroySurfaceKHR DestroySurfaceKHR;
+	PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR GetPhysicalDeviceSurfaceCapabilitiesKHR;
+	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR GetPhysicalDeviceSurfaceFormatsKHR;
+	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR GetPhysicalDeviceSurfacePresentModesKHR;
+	PFN_vkGetPhysicalDeviceSurfaceSupportKHR GetPhysicalDeviceSurfaceSupportKHR;
+
 	// VK_EXT_debug_utils
 	PFN_vkCmdBeginDebugUtilsLabelEXT CmdBeginDebugUtilsLabelEXT;
 	PFN_vkCmdEndDebugUtilsLabelEXT CmdEndDebugUtilsLabelEXT;
@@ -34,6 +41,7 @@ typedef struct VulkanContextT {
 	B8 Validation;
 	VkInstance Instance;
 	VkDebugUtilsMessengerEXT DebugMessenger;
+	VkSurfaceKHR Surface;
 } VulkanContext;
 
 void Vulkan_ReportFailure(const char* expr, VkResult result, const char* msg, const char* file, int line);

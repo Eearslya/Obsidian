@@ -277,7 +277,17 @@ VkResult VulkanInstance_Create(VulkanContext* context, ConstDynArrayT instanceEx
 			return FALSE;                                                                                    \
 		}                                                                                                  \
 	} while (0)
+		// Core 1.0
 		LoadInstanceFn(DestroyInstance, FALSE);
+
+		// VK_KHR_surface
+		LoadInstanceFn(DestroySurfaceKHR, TRUE);
+		LoadInstanceFn(GetPhysicalDeviceSurfaceCapabilitiesKHR, TRUE);
+		LoadInstanceFn(GetPhysicalDeviceSurfaceFormatsKHR, TRUE);
+		LoadInstanceFn(GetPhysicalDeviceSurfacePresentModesKHR, TRUE);
+		LoadInstanceFn(GetPhysicalDeviceSurfaceSupportKHR, TRUE);
+
+		// VK_EXT_debug_utils
 		LoadInstanceFn(CmdBeginDebugUtilsLabelEXT, TRUE);
 		LoadInstanceFn(CmdEndDebugUtilsLabelEXT, TRUE);
 		LoadInstanceFn(CmdInsertDebugUtilsLabelEXT, TRUE);
