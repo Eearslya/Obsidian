@@ -37,6 +37,13 @@ void Platform_Shutdown(PlatformState state);
 B8 Platform_Update(PlatformState state);
 
 /**
+ * Get the size of the renderable area.
+ * @param width A pointer where the width will be stored.
+ * @param height A pointer where the height will be stored.
+ */
+void Platform_GetFramebufferSize(PlatformState state, U32* width, U32* height);
+
+/**
  * Allocate a memory block.
  * @param bytes Size of the desired memory block.
  * @return NULL upon failure, otherwise a pointer to the block of memory.

@@ -19,6 +19,10 @@
 struct PlatformStateT {
 	HINSTANCE Instance;
 	HWND Window;
+	U32 FramebufferW;
+	U32 FramebufferH;
+	U32 WindowW;
+	U32 WindowH;
 };
 
 static const char* WndClassName = "ObsidianWndClass";
@@ -31,6 +35,8 @@ B8 Platform_Initialize(PlatformState* state, const char* appName, I32 windowX, I
 	// Allocate our state object.
 	*state = malloc(sizeof(struct PlatformStateT));
 	memset(*state, 0, sizeof(struct PlatformStateT));
+	(*state)->FramebufferW = windowW;
+	(*state)->FramebufferH = windowH;
 
 	// Find our Win32 instance.
 	(*state)->Instance = GetModuleHandleA(NULL);
@@ -82,6 +88,8 @@ B8 Platform_Initialize(PlatformState* state, const char* appName, I32 windowX, I
 	} else {
 		windowY += borderRect.top;
 	}
+	(*state)->WindowW = windowW;
+	(*state)->WindowH = windowH;
 
 	// Create our initial window.
 	(*state)->Window = CreateWindowExA(windowStyleEx,
@@ -130,6 +138,11 @@ B8 Platform_Update(PlatformState state) {
 	}
 
 	return TRUE;
+}
+
+void Platform_GetFramebufferSize(PlatformState state, U32* width, U32* height) {
+	*width  = state->FramebufferW;
+	*height = state->FramebufferH;
 }
 
 void* Platform_Alloc(size_t bytes) {
