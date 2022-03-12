@@ -8,7 +8,7 @@ B8 Game_OnKeyPressed(U16 code, void* sender, void* listener, EventContext evt) {
 	GameState* game = (GameState*) listener;
 
 	const Key key = evt.Data.U16[0];
-	if (key == Key_Escape) { Application_Shutdown(game->App); }
+	if (key == Key_Escape) { Application_RequestShutdown(game->App); }
 
 	return FALSE;
 }
@@ -38,7 +38,10 @@ B8 Game_Render(Application app, F32 deltaTime) {
 
 void Game_Shutdown(Application app) {
 	GameState* state = (GameState*) Application_GetUserData(app);
-	if (state) { Memory_Free(state); }
+	if (state) {
+		Memory_Free(state);
+		Application_SetUserData(app, NULL);
+	}
 }
 
 void Game_OnResized(Application app, U32 width, U32 height) {}

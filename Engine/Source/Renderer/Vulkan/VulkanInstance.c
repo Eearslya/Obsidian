@@ -278,7 +278,16 @@ VkResult VulkanInstance_Create(VulkanContext* context, ConstDynArrayT instanceEx
 		}                                                                                                  \
 	} while (0)
 		// Core 1.0
+		LoadInstanceFn(CreateDevice, FALSE);
+		LoadInstanceFn(DestroyDevice, FALSE);
 		LoadInstanceFn(DestroyInstance, FALSE);
+		LoadInstanceFn(EnumerateDeviceExtensionProperties, FALSE);
+		LoadInstanceFn(EnumeratePhysicalDevices, FALSE);
+		LoadInstanceFn(GetDeviceQueue, FALSE);
+		LoadInstanceFn(GetPhysicalDeviceFeatures, FALSE);
+		LoadInstanceFn(GetPhysicalDeviceMemoryProperties, FALSE);
+		LoadInstanceFn(GetPhysicalDeviceProperties, FALSE);
+		LoadInstanceFn(GetPhysicalDeviceQueueFamilyProperties, FALSE);
 
 		// VK_KHR_surface
 		LoadInstanceFn(DestroySurfaceKHR, TRUE);

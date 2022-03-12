@@ -3,6 +3,7 @@
 #include <Obsidian/Core/Memory.h>
 #include <Obsidian/Renderer/Vulkan/Common.h>
 #include <Obsidian/Renderer/Vulkan/VulkanDebug.h>
+#include <Obsidian/Renderer/Vulkan/VulkanDevice.h>
 #include <Obsidian/Renderer/Vulkan/VulkanEngine.h>
 #include <Obsidian/Renderer/Vulkan/VulkanInstance.h>
 #include <Obsidian/Renderer/Vulkan/VulkanPlatform.h>
@@ -61,42 +62,75 @@ B8 RenderEngine_Vulkan_Initialize(RenderEngine engine, const char* appName, stru
 	}
 
 	// Load global Vulkan functions
-	if (!Vulkan_LoadGlobalFunctions()) { return FALSE; }
+	if (!Vulkan_LoadGlobalFunctions()) {
+		LogE("[Vulkan] Failed to load Vulkan global functions!");
+		RenderEngine_Vulkan_Shutdown(engine);
 
-	// Gather required instance extensions
-	const char** instanceExtensions = DynArray_Create(const char*);
-	Platform_Vulkan_GetRequiredInstanceExtensions((DynArrayT) &instanceExtensions);
+		return FALSE;
+	}
 
 	// Create instance
-	const B8 instanceCreated = VulkanInstance_Create(&Vulkan, (ConstDynArrayT) &instanceExtensions) == VK_SUCCESS;
-	DynArray_Destroy(&instanceExtensions);
-	if (!instanceCreated) { return FALSE; }
+	{
+		// Gather required instance extensions
+		const char** instanceExtensions = DynArray_Create(const char*);
+		Platform_Vulkan_GetRequiredInstanceExtensions((DynArrayT) &instanceExtensions);
+
+		const VkResult instanceResult = VulkanInstance_Create(&Vulkan, (ConstDynArrayT) &instanceExtensions);
+
+		DynArray_Destroy(&instanceExtensions);
+
+		if (instanceResult != VK_SUCCESS) {
+			LogE("[Vulkan] Failed to create Vulkan instance! (%s)", VulkanString_VkResult(instanceResult));
+			RenderEngine_Vulkan_Shutdown(engine);
+
+			return FALSE;
+		}
+	}
 
 	// Create debug messenger, if applicable
 	if (Vulkan.Validation) {
 		if (VulkanDebug_CreateMessenger(&Vulkan) != VK_SUCCESS) {
-			LogW("[Vulkan] Failed to create Vulkan debug messenger.");
+			LogW("[Vulkan] Failed to create Vulkan debug messenger. Application will continue without validation.");
 			Vulkan.Validation = FALSE;
 		}
 	}
 
 	// Create platform surface
-	const B8 surfaceCreated = Platform_Vulkan_CreateSurface(platform, &Vulkan);
-	if (!surfaceCreated) {
-		LogE("[Vulkan] Failed to create Vulkan surface!");
+	{
+		const B8 surfaceCreated = Platform_Vulkan_CreateSurface(platform, &Vulkan);
+		if (!surfaceCreated) {
+			LogE("[Vulkan] Failed to create Vulkan surface!");
+			RenderEngine_Vulkan_Shutdown(engine);
 
-		return FALSE;
+			return FALSE;
+		}
+		LogD("[Vulkan] Surface created.");
 	}
-	LogD("[Vulkan] Surface created.");
+
+	// Create logical device
+	{
+		const VkResult deviceResult = VulkanDevice_Create(&Vulkan);
+		if (deviceResult != VK_SUCCESS) {
+			LogE("[Vulkan] Failed to create Vulkan device! (%s)", VulkanString_VkResult(deviceResult));
+			RenderEngine_Vulkan_Shutdown(engine);
+
+			return FALSE;
+		}
+	}
 
 	return TRUE;
 }
 
 void RenderEngine_Vulkan_Shutdown(RenderEngine engine) {
+	if (Vulkan.PhysicalDevice) { VulkanDevice_Destroy(&Vulkan); }
 	if (Vulkan.Instance) {
-		if (Vulkan.Surface) { Vulkan.vk.DestroySurfaceKHR(Vulkan.Instance, Vulkan.Surface, &Vulkan.Allocator); }
+		if (Vulkan.Surface) {
+			Vulkan.vk.DestroySurfaceKHR(Vulkan.Instance, Vulkan.Surface, &Vulkan.Allocator);
+			Vulkan.Surface = VK_NULL_HANDLE;
+		}
 		if (Vulkan.Validation) { VulkanDebug_DestroyMessenger(&Vulkan); }
 		VulkanInstance_Destroy(&Vulkan);
+		Vulkan.Instance = VK_NULL_HANDLE;
 	}
 }
 

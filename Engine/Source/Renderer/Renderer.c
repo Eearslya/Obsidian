@@ -27,6 +27,7 @@ void Renderer_Shutdown() {
 	if (Engine) {
 		Engine->Shutdown(Engine);
 		RenderEngine_Destroy(Engine);
+		Engine = NULL;
 	}
 }
 

@@ -11,20 +11,37 @@
 extern B8 GetApplicationInfo(ApplicationCreateInfo* createInfo);
 
 int main(int argc, const char** argv) {
-	if (!Memory_Initialize()) { return 1; }
-
+	int status = 0;
 	ApplicationCreateInfo info;
-	if (GetApplicationInfo(&info) == FALSE) { return 1; }
+	Application app = NULL;
 
-	Application app;
-	if (Application_Create(&info, &app) == FALSE) { return 1; }
+	if (!Memory_Initialize()) {
+		status = 2;
+		goto Shutdown;
+	}
+
+	// Initialize the logger.
+	Logger_Initialize();
+
+	if (GetApplicationInfo(&info) == FALSE) {
+		status = 1;
+		goto Shutdown;
+	}
+
+	if (Application_Create(&info, &app) == FALSE) {
+		status = 1;
+		goto Shutdown;
+	}
 
 	if (!Application_Run(app)) {
 		LogE("Application exited abnormally.");
-		return 1;
+		status = 1;
 	}
 
+Shutdown:
+	Application_Shutdown(app);
+	Logger_Shutdown();
 	Memory_Shutdown();
 
-	return 0;
+	return status;
 }

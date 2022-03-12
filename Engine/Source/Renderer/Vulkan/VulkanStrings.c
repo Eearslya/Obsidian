@@ -81,3 +81,20 @@ const char* VulkanString_VkResult(VkResult value) {
 			return "Unknown";
 	}
 }
+
+const char* VulkanString_VkPhysicalDeviceType(VkPhysicalDeviceType value) {
+	switch (value) {
+		case VK_PHYSICAL_DEVICE_TYPE_OTHER:
+			return "Other";
+		case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+			return "IntegratedGpu";
+		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+			return "DiscreteGpu";
+		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+			return "VirtualGpu";
+		case VK_PHYSICAL_DEVICE_TYPE_CPU:
+			return "Cpu";
+		default:
+			return "Unknown";
+	}
+}

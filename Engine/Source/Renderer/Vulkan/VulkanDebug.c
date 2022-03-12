@@ -47,7 +47,8 @@ VkResult VulkanDebug_CreateMessenger(VulkanContext* context) {
 }
 
 void VulkanDebug_DestroyMessenger(VulkanContext* context) {
-	if (context->vk.DestroyDebugUtilsMessengerEXT) {
+	if (context->DebugMessenger && context->vk.DestroyDebugUtilsMessengerEXT) {
 		context->vk.DestroyDebugUtilsMessengerEXT(context->Instance, context->DebugMessenger, &context->Allocator);
+		context->DebugMessenger = VK_NULL_HANDLE;
 	}
 }

@@ -19,12 +19,12 @@ typedef enum LogLevel {
  * Initialize the logger system.
  * @return TRUE upon success, FALSE on failure.
  */
-B8 Logger_Initialize();
+OAPI B8 Logger_Initialize();
 
 /**
  * Shutdown the logger system.
  */
-void Logger_Shutdown();
+OAPI void Logger_Shutdown();
 
 /**
  * Report a failed assertion to the logs.

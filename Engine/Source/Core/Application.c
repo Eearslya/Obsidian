@@ -16,9 +16,6 @@ struct ApplicationT {
 };
 
 B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app) {
-	// Initialize the logger.
-	Logger_Initialize();
-
 	// Create our application data.
 	*app = Platform_Alloc(sizeof(struct ApplicationT));
 	Platform_MemZero(*app, sizeof(struct ApplicationT));
@@ -27,6 +24,7 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 	if (createInfo->Callbacks.Initialize == NULL || createInfo->Callbacks.Update == NULL ||
 	    createInfo->Callbacks.Render == NULL || createInfo->Callbacks.Shutdown == NULL) {
 		LogF("[Application] Cannot create an application without callbacks for Initialize, Update, Render, and Shutdown!");
+		Application_Shutdown(*app);
 
 		return FALSE;
 	}
@@ -43,6 +41,7 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 	                         createInfo->WindowW,
 	                         createInfo->WindowH)) {
 		LogF("[Application] Failed to initialize Platform layer!");
+		Application_Shutdown(*app);
 
 		return FALSE;
 	}
@@ -50,6 +49,7 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 	// Initialize the event system.
 	if (!Event_Initialize()) {
 		LogF("[Application] Failed to initialize Event system!");
+		Application_Shutdown(*app);
 
 		return FALSE;
 	}
@@ -57,6 +57,7 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 	// Initialize the input system.
 	if (!Input_Initialize()) {
 		LogF("[Application] Failed to initialize Input system!");
+		Application_Shutdown(*app);
 
 		return FALSE;
 	}
@@ -64,6 +65,7 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 	// Initialize the rendering system.
 	if (!Renderer_Initialize(createInfo->Name, (*app)->Platform)) {
 		LogF("[Application] Failed to initialize Rendering system!");
+		Application_Shutdown(*app);
 
 		return FALSE;
 	}
@@ -71,6 +73,7 @@ B8 Application_Create(const ApplicationCreateInfo* createInfo, Application* app)
 	// Initialize the application.
 	if (!(*app)->Callbacks.Initialize(*app)) {
 		LogF("[Application] Application failed to initialize!");
+		Application_Shutdown(*app);
 
 		return FALSE;
 	}
@@ -134,17 +137,23 @@ B8 Application_Run(Application app) {
 
 		app->LastUpdate = now;
 	}
-	app->Running = FALSE;
-	app->Callbacks.Shutdown(app);
-	Renderer_Shutdown();
-	Input_Shutdown();
-	Event_Shutdown();
-	Platform_Shutdown(app->Platform);
+	Application_Shutdown(app);
 
 	return badShutdown == FALSE;
 }
 
 void Application_Shutdown(Application app) {
+	if (app) {
+		app->Running = FALSE;
+		if (app->Callbacks.Shutdown) { app->Callbacks.Shutdown(app); }
+	}
+	Renderer_Shutdown();
+	Input_Shutdown();
+	Event_Shutdown();
+	Platform_Shutdown(app->Platform);
+}
+
+void Application_RequestShutdown(Application app) {
 	EventContext evt;
 	if (Event_Fire(EventCode_ApplicationQuit, NULL, evt) == FALSE) { app->Running = FALSE; }
 }

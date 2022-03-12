@@ -74,6 +74,7 @@ void Memory_Shutdown() {
 	// Memory leak check
 	if (MemoryStats.TotalAllocatedBytes != 0) {
 		LogW("[Memory] %lld bytes are still allocated at program termination!", MemoryStats.TotalAllocatedBytes);
+		Memory_LogUsage();
 	}
 #endif
 }
