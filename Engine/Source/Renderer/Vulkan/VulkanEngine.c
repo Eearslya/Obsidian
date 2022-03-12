@@ -123,13 +123,13 @@ B8 RenderEngine_Vulkan_Initialize(RenderEngine engine, const char* appName, stru
 }
 
 void RenderEngine_Vulkan_Shutdown(RenderEngine engine) {
-	if (Vulkan.PhysicalDevice) { VulkanDevice_Destroy(&Vulkan); }
+	VulkanDevice_Destroy(&Vulkan);
 	if (Vulkan.Instance) {
 		if (Vulkan.Surface) {
 			Vulkan.vk.DestroySurfaceKHR(Vulkan.Instance, Vulkan.Surface, &Vulkan.Allocator);
 			Vulkan.Surface = VK_NULL_HANDLE;
 		}
-		if (Vulkan.Validation) { VulkanDebug_DestroyMessenger(&Vulkan); }
+		VulkanDebug_DestroyMessenger(&Vulkan);
 		VulkanInstance_Destroy(&Vulkan);
 		Vulkan.Instance = VK_NULL_HANDLE;
 	}

@@ -1,6 +1,7 @@
 #include <Obsidian/Containers/DynArray.h>
 #include <Obsidian/Core/Logger.h>
 #include <Obsidian/Core/Memory.h>
+#include <Obsidian/Core/String.h>
 #include <Obsidian/Renderer/Vulkan/VulkanDevice.h>
 #include <Obsidian/Renderer/Vulkan/VulkanStrings.h>
 
@@ -89,11 +90,10 @@ static void VulkanDevice_DumpGPUInfo(const PhysicalDeviceInfo* info) {
 }
 
 static B8 VulkanDevice_CheckCompatibility(VulkanContext* context, const PhysicalDeviceInfo* info) {
-	B8 graphicsQueue = FALSE;
-	B8 transferQueue = FALSE;
-	B8 computeQueue  = FALSE;
-	B8 presentQueue  = FALSE;
-
+	B8 graphicsQueue      = FALSE;
+	B8 transferQueue      = FALSE;
+	B8 computeQueue       = FALSE;
+	B8 presentQueue       = FALSE;
 	const U32 familyCount = DynArray_Size(&info->QueueFamilies);
 	for (U32 i = 0; i < familyCount; ++i) {
 		if (info->QueueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
@@ -106,6 +106,13 @@ static B8 VulkanDevice_CheckCompatibility(VulkanContext* context, const Physical
 		if (info->QueueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) { computeQueue = TRUE; }
 	}
 	if (!graphicsQueue || !transferQueue || !computeQueue || !presentQueue) { return FALSE; }
+
+	B8 extSwapchain          = FALSE;
+	const U32 extensionCount = DynArray_Size(&info->Extensions);
+	for (U32 i = 0; i < extensionCount; ++i) {
+		if (String_Equal(info->Extensions[i].extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) { extSwapchain = TRUE; }
+	}
+	if (!extSwapchain) { return FALSE; }
 
 	return TRUE;
 }
@@ -286,39 +293,61 @@ VkResult VulkanDevice_Create(VulkanContext* context) {
 		}
 	}
 
-	LogT("[VulkanDevice] Using queue %u.%u for graphics.",
-	     context->DeviceInfo.GraphicsFamily,
-	     context->DeviceInfo.GraphicsIndex);
-	LogT("[VulkanDevice] Using queue %u.%u for compute.",
-	     context->DeviceInfo.ComputeFamily,
-	     context->DeviceInfo.ComputeIndex);
-	LogT("[VulkanDevice] Using queue %u.%u for transfer.",
-	     context->DeviceInfo.TransferFamily,
-	     context->DeviceInfo.TransferIndex);
-	LogT("[VulkanDevice] Using queue %u.%u for async graphics.",
-	     context->DeviceInfo.AsyncGraphicsFamily,
-	     context->DeviceInfo.AsyncGraphicsIndex);
+	// Queue family create info
+	U32 uniqueFamilyCount             = 0;
+	VkDeviceQueueCreateInfo* queueCIs = NULL;
+	U32* uniqueFamilies               = NULL;
+	F32* queuePriorities              = NULL;
+	{
+		LogT("[VulkanDevice] Using queue %u.%u for graphics.",
+		     context->DeviceInfo.GraphicsFamily,
+		     context->DeviceInfo.GraphicsIndex);
+		LogT("[VulkanDevice] Using queue %u.%u for compute.",
+		     context->DeviceInfo.ComputeFamily,
+		     context->DeviceInfo.ComputeIndex);
+		LogT("[VulkanDevice] Using queue %u.%u for transfer.",
+		     context->DeviceInfo.TransferFamily,
+		     context->DeviceInfo.TransferIndex);
+		LogT("[VulkanDevice] Using queue %u.%u for async graphics.",
+		     context->DeviceInfo.AsyncGraphicsFamily,
+		     context->DeviceInfo.AsyncGraphicsIndex);
 
-	U32 uniqueFamilyCount = 0;
-	U32* uniqueFamilies   = DynArray_CreateWithCapacity(U32, familyCount);
-	U32 maxCount          = 0;
-	for (U32 i = 0; i < familyCount; ++i) {
-		if (queueCounts[i] > 0) {
-			DynArray_PushValue(&uniqueFamilies, i);
-			++uniqueFamilyCount;
+		uniqueFamilies = DynArray_CreateWithCapacity(U32, familyCount);
+		U32 maxCount   = 0;
+		for (U32 i = 0; i < familyCount; ++i) {
+			if (queueCounts[i] > 0) {
+				DynArray_PushValue(&uniqueFamilies, i);
+				++uniqueFamilyCount;
+			}
+			if (queueCounts[i] > maxCount) { maxCount = queueCounts[i]; }
 		}
-		if (queueCounts[i] > maxCount) { maxCount = queueCounts[i]; }
+		queuePriorities = DynArray_CreateWithSize(F32, maxCount);
+		for (U32 i = 0; i < maxCount; ++i) { queuePriorities[i] = 1.0f; }
+		queueCIs = DynArray_CreateWithSize(VkDeviceQueueCreateInfo, uniqueFamilyCount);
+		for (U32 i = 0; i < uniqueFamilyCount; ++i) {
+			queueCIs[i].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueCIs[i].pNext            = NULL;
+			queueCIs[i].flags            = 0;
+			queueCIs[i].queueFamilyIndex = uniqueFamilies[i];
+			queueCIs[i].queueCount       = queueCounts[uniqueFamilies[i]];
+			queueCIs[i].pQueuePriorities = queuePriorities;
+		}
 	}
-	F32* queuePriorities = DynArray_CreateWithSize(F32, maxCount);
-	for (U32 i = 0; i < maxCount; ++i) { queuePriorities[i] = 1.0f; }
-	VkDeviceQueueCreateInfo* queueCIs = DynArray_CreateWithSize(VkDeviceQueueCreateInfo, uniqueFamilyCount);
-	for (U32 i = 0; i < uniqueFamilyCount; ++i) {
-		queueCIs[i].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCIs[i].pNext            = NULL;
-		queueCIs[i].flags            = 0;
-		queueCIs[i].queueFamilyIndex = uniqueFamilies[i];
-		queueCIs[i].queueCount       = queueCounts[uniqueFamilies[i]];
-		queueCIs[i].pQueuePriorities = queuePriorities;
+
+	// Extensions
+	U32 enabledExtensionCount      = 0;
+	const char** enabledExtensions = DynArray_Create(const char*);
+	{
+		// We check for VK_KHR_swapchain in device compatibility, so there is no need to check for it here.
+		DynArray_PushValue(&enabledExtensions, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+		enabledExtensionCount = DynArray_Size(&enabledExtensions);
+	}
+
+	// Dump debug info
+	{
+		LogT("[VulkanDevice] Enabled extensions (%u):", enabledExtensionCount);
+		for (U32 i = 0; i < enabledExtensionCount; ++i) { LogT("[VulkanDevice] - %s", enabledExtensions[i]); }
 	}
 
 	const VkDeviceCreateInfo deviceCI = {.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -328,13 +357,14 @@ VkResult VulkanDevice_Create(VulkanContext* context) {
 	                                     .pQueueCreateInfos       = queueCIs,
 	                                     .enabledLayerCount       = 0,
 	                                     .ppEnabledLayerNames     = NULL,
-	                                     .enabledExtensionCount   = 0,
-	                                     .ppEnabledExtensionNames = NULL,
+	                                     .enabledExtensionCount   = enabledExtensionCount,
+	                                     .ppEnabledExtensionNames = enabledExtensions,
 	                                     .pEnabledFeatures        = NULL};
 	VkDevice device                   = VK_NULL_HANDLE;
 	const VkResult deviceResult =
 		context->vk.CreateDevice(context->PhysicalDevice, &deviceCI, &context->Allocator, &device);
 
+	DynArray_Destroy(&enabledExtensions);
 	DynArray_Destroy(&uniqueFamilies);
 	DynArray_Destroy(&queuePriorities);
 	DynArray_Destroy(&queueCIs);
