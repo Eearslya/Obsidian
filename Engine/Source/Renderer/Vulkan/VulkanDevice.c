@@ -344,6 +344,23 @@ VkResult VulkanDevice_Create(VulkanContext* context) {
 		context->Device = device;
 		LogD("[Vulkan] Device created.");
 
+#define LoadDeviceFn(fn, ext)                                                                                       \
+	do {                                                                                                              \
+		if ((context->vk.fn = (PFN_vk##fn) context->vk.GetDeviceProcAddr(context->Device, "vk" #fn)) == NULL && !ext) { \
+			LogE("[VulkanEngine] Failed to load device function '%s'!", "vk" #fn);                                        \
+			return FALSE;                                                                                                 \
+		}                                                                                                               \
+	} while (0)
+		// Core 1.0
+		LoadDeviceFn(AllocateMemory, FALSE);
+		LoadDeviceFn(BindImageMemory, FALSE);
+		LoadDeviceFn(CreateImage, FALSE);
+		LoadDeviceFn(DestroyImage, FALSE);
+		LoadDeviceFn(FreeMemory, FALSE);
+		LoadDeviceFn(GetDeviceQueue, FALSE);
+		LoadDeviceFn(GetImageMemoryRequirements, FALSE);
+#undef LoadDeviceFn
+
 		context->vk.GetDeviceQueue(
 			context->Device, context->DeviceInfo.GraphicsFamily, context->DeviceInfo.GraphicsIndex, &context->Graphics);
 		context->vk.GetDeviceQueue(
@@ -377,4 +394,14 @@ void VulkanDevice_Destroy(VulkanContext* context) {
 		DynArray_Destroy(&context->DeviceInfo.QueueFamilies);
 		context->DeviceInfo.QueueFamilies = NULL;
 	}
+}
+
+I32 VulkanDevice_FindMemoryType(VulkanContext* context, U32 typeFilter, VkMemoryPropertyFlags properties) {
+	for (U32 i = 0; i < context->DeviceInfo.Memory.memoryTypeCount; ++i) {
+		if (typeFilter & (1 << i) && (context->DeviceInfo.Memory.memoryTypes->propertyFlags & properties) == properties) {
+			return i;
+		}
+	}
+
+	return -1;
 }

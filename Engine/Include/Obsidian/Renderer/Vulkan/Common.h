@@ -3,23 +3,6 @@
 #include <Obsidian/Defines.h>
 #include <vulkan/vulkan.h>
 
-typedef struct PhysicalDeviceInfo {
-	VkPhysicalDevice GPU;
-	VkExtensionProperties* Extensions;
-	VkPhysicalDeviceFeatures Features;
-	VkPhysicalDeviceMemoryProperties Memory;
-	VkPhysicalDeviceProperties Properties;
-	VkQueueFamilyProperties* QueueFamilies;
-	U32 GraphicsFamily;
-	U32 GraphicsIndex;
-	U32 TransferFamily;
-	U32 TransferIndex;
-	U32 ComputeFamily;
-	U32 ComputeIndex;
-	U32 AsyncGraphicsFamily;
-	U32 AsyncGraphicsIndex;
-} PhysicalDeviceInfo;
-
 typedef struct VulkanFunctionsT {
 	// Global Functions
 	PFN_vkEnumerateInstanceVersion EnumerateInstanceVersion;
@@ -33,11 +16,20 @@ typedef struct VulkanFunctionsT {
 	PFN_vkDestroyInstance DestroyInstance;
 	PFN_vkEnumerateDeviceExtensionProperties EnumerateDeviceExtensionProperties;
 	PFN_vkEnumeratePhysicalDevices EnumeratePhysicalDevices;
-	PFN_vkGetDeviceQueue GetDeviceQueue;
+	PFN_vkGetDeviceProcAddr GetDeviceProcAddr;
 	PFN_vkGetPhysicalDeviceFeatures GetPhysicalDeviceFeatures;
 	PFN_vkGetPhysicalDeviceMemoryProperties GetPhysicalDeviceMemoryProperties;
 	PFN_vkGetPhysicalDeviceProperties GetPhysicalDeviceProperties;
 	PFN_vkGetPhysicalDeviceQueueFamilyProperties GetPhysicalDeviceQueueFamilyProperties;
+
+	// Device Functions
+	PFN_vkAllocateMemory AllocateMemory;
+	PFN_vkBindImageMemory BindImageMemory;
+	PFN_vkCreateImage CreateImage;
+	PFN_vkDestroyImage DestroyImage;
+	PFN_vkFreeMemory FreeMemory;
+	PFN_vkGetDeviceQueue GetDeviceQueue;
+	PFN_vkGetImageMemoryRequirements GetImageMemoryRequirements;
 
 	// VK_KHR_surface
 	PFN_vkDestroySurfaceKHR DestroySurfaceKHR;
@@ -59,6 +51,29 @@ typedef struct VulkanFunctionsT {
 	PFN_vkSetDebugUtilsObjectTagEXT SetDebugUtilsObjectTagEXT;
 	PFN_vkSubmitDebugUtilsMessageEXT SubmitDebugUtilsMessageEXT;
 } VulkanFunctions;
+
+typedef struct PhysicalDeviceInfo {
+	VkPhysicalDevice GPU;
+	VkExtensionProperties* Extensions;
+	VkPhysicalDeviceFeatures Features;
+	VkPhysicalDeviceMemoryProperties Memory;
+	VkPhysicalDeviceProperties Properties;
+	VkQueueFamilyProperties* QueueFamilies;
+	U32 GraphicsFamily;
+	U32 GraphicsIndex;
+	U32 TransferFamily;
+	U32 TransferIndex;
+	U32 ComputeFamily;
+	U32 ComputeIndex;
+	U32 AsyncGraphicsFamily;
+	U32 AsyncGraphicsIndex;
+} PhysicalDeviceInfo;
+
+typedef struct VulkanImageT {
+	VkImage Image;
+	VkDeviceMemory Memory;
+	VkImageCreateInfo CreateInfo;
+} VulkanImage;
 
 typedef struct VulkanContextT {
 	VulkanFunctions vk;

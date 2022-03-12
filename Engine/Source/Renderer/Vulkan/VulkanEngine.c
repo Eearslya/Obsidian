@@ -5,6 +5,7 @@
 #include <Obsidian/Renderer/Vulkan/VulkanDebug.h>
 #include <Obsidian/Renderer/Vulkan/VulkanDevice.h>
 #include <Obsidian/Renderer/Vulkan/VulkanEngine.h>
+#include <Obsidian/Renderer/Vulkan/VulkanImage.h>
 #include <Obsidian/Renderer/Vulkan/VulkanInstance.h>
 #include <Obsidian/Renderer/Vulkan/VulkanPlatform.h>
 #include <Obsidian/Renderer/Vulkan/VulkanStrings.h>
