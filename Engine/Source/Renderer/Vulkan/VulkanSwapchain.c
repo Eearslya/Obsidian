@@ -22,7 +22,18 @@ VkResult VulkanSwapchain_Create(VulkanContext* context) {
 	return VK_SUCCESS;
 }
 
-void VulkanSwapchain_Destroy(VulkanContext* context) {
+/** Destroys all of the objects associated with an old swapchain while preserving anything the new swapchain can use. */
+void VulkanSwapchain_Clean(VulkanContext* context) {
+	if (context->Swapchain.Views) {
+		const U32 viewCount = DynArray_Size(&context->Swapchain.Views);
+		for (U32 i = 0; i < viewCount; ++i) {
+			if (context->Swapchain.Views[i].View) {
+				context->vk.DestroyImageView(context->Device, context->Swapchain.Views[i].View, &context->Allocator);
+			}
+		}
+		DynArray_Destroy(&context->Swapchain.Views);
+		context->Swapchain.Views = NULL;
+	}
 	if (context->Swapchain.Images) {
 		DynArray_Destroy(&context->Swapchain.Images);
 		context->Swapchain.Images = NULL;
@@ -31,6 +42,10 @@ void VulkanSwapchain_Destroy(VulkanContext* context) {
 		context->vk.DestroySwapchainKHR(context->Device, context->Swapchain.Swapchain, &context->Allocator);
 		context->Swapchain.Swapchain = VK_NULL_HANDLE;
 	}
+}
+
+void VulkanSwapchain_Destroy(VulkanContext* context) {
+	VulkanSwapchain_Clean(context);
 	if (context->Swapchain.SurfaceFormats) {
 		DynArray_Destroy(&context->Swapchain.SurfaceFormats);
 		context->Swapchain.SurfaceFormats = NULL;
@@ -131,23 +146,73 @@ VkResult VulkanSwapchain_Recreate(VulkanContext* context) {
 		LogT("[VulkanSwapchain] - Extent: %u x %u", swapchainCI.imageExtent.width, swapchainCI.imageExtent.height);
 	}
 
+	// Create our swapchain
 	VkSwapchainKHR swapchain = VK_NULL_HANDLE;
 	const VkResult swapchainResult =
 		context->vk.CreateSwapchainKHR(context->Device, &swapchainCI, &context->Allocator, &swapchain);
-	if (swapchainResult != VK_SUCCESS) { return swapchainResult; }
-	if (context->Swapchain.Swapchain) {
-		DynArray_Destroy(&context->Swapchain.Images);
-		context->Swapchain.Images = NULL;
-		context->vk.DestroySwapchainKHR(context->Device, context->Swapchain.Swapchain, &context->Allocator);
-		context->Swapchain.Swapchain = VK_NULL_HANDLE;
+	if (swapchainResult != VK_SUCCESS) {
+		LogE("[VulkanSwapchain] Failed to create swapchain! (%s)", VulkanString_VkResult(swapchainResult));
+		VulkanSwapchain_Destroy(context);
+
+		return swapchainResult;
 	}
+	// If we had an old swapchain, clean it up
+	if (context->Swapchain.Swapchain) { VulkanSwapchain_Clean(context); }
 	context->Swapchain.Swapchain = swapchain;
 
+	// Set up the fake create info for our swapchain images
+	const VkImageCreateInfo imageCI = {.sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+	                                   .pNext       = NULL,
+	                                   .flags       = 0,
+	                                   .imageType   = VK_IMAGE_TYPE_2D,
+	                                   .format      = swapchainCI.imageFormat,
+	                                   .extent      = {swapchainCI.imageExtent.width, swapchainCI.imageExtent.height, 1},
+	                                   .mipLevels   = 1,
+	                                   .arrayLayers = swapchainCI.imageArrayLayers,
+	                                   .samples     = VK_SAMPLE_COUNT_1_BIT,
+	                                   .tiling      = VK_IMAGE_TILING_OPTIMAL,
+	                                   .usage       = swapchainCI.imageUsage,
+	                                   .sharingMode = swapchainCI.imageSharingMode,
+	                                   .queueFamilyIndexCount = swapchainCI.queueFamilyIndexCount,
+	                                   .pQueueFamilyIndices   = swapchainCI.pQueueFamilyIndices,
+	                                   .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED};
+
+	// Set up the create info for our swapchain image views
+	VulkanImageView_CreateInfo viewCI = {.Image          = NULL,  // To be filled in for loop
+	                                     .Type           = VK_IMAGE_VIEW_TYPE_2D,
+	                                     .Format         = swapchainCI.imageFormat,
+	                                     .BaseMipLevel   = 0,
+	                                     .MipLevels      = 1,
+	                                     .BaseArrayLayer = 0,
+	                                     .ArrayLayers    = swapchainCI.imageArrayLayers};
+
+	// Fetch all of our swapchain images
 	U32 imageCount = 0;
 	context->vk.GetSwapchainImagesKHR(context->Device, context->Swapchain.Swapchain, &imageCount, NULL);
-	context->Swapchain.Images = DynArray_CreateWithSize(VkImage, imageCount);
-	context->vk.GetSwapchainImagesKHR(
-		context->Device, context->Swapchain.Swapchain, &imageCount, context->Swapchain.Images);
+	VkImage* images           = DynArray_CreateWithSize(VkImage, imageCount);
+	context->Swapchain.Images = DynArray_CreateWithSize(VulkanImage, imageCount);
+	context->Swapchain.Views  = DynArray_CreateWithSize(VulkanImageView, imageCount);
+	context->vk.GetSwapchainImagesKHR(context->Device, context->Swapchain.Swapchain, &imageCount, images);
+
+	// Assign them to our DynArray with the fake create info
+	for (U32 i = 0; i < imageCount; ++i) {
+		context->Swapchain.Images[i].Image      = images[i];
+		context->Swapchain.Images[i].Memory     = VK_NULL_HANDLE;
+		context->Swapchain.Images[i].CreateInfo = imageCI;
+	}
+	DynArray_Destroy(&images);
+
+	// Create all of our swapchain image views
+	for (U32 i = 0; i < imageCount; ++i) {
+		viewCI.Image              = &context->Swapchain.Images[i];
+		const VkResult viewResult = VulkanImageView_Create(context, &viewCI, &context->Swapchain.Views[i]);
+		if (viewResult != VK_SUCCESS) {
+			LogE("[VulkanSwapchain] Failed to create image view for swapchain image!");
+			VulkanSwapchain_Destroy(context);
+
+			return viewResult;
+		}
+	}
 
 	return swapchainResult;
 }

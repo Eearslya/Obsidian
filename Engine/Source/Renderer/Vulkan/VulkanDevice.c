@@ -385,7 +385,9 @@ VkResult VulkanDevice_Create(VulkanContext* context) {
 		LoadDeviceFn(AllocateMemory, FALSE);
 		LoadDeviceFn(BindImageMemory, FALSE);
 		LoadDeviceFn(CreateImage, FALSE);
+		LoadDeviceFn(CreateImageView, FALSE);
 		LoadDeviceFn(DestroyImage, FALSE);
+		LoadDeviceFn(DestroyImageView, FALSE);
 		LoadDeviceFn(FreeMemory, FALSE);
 		LoadDeviceFn(GetDeviceQueue, FALSE);
 		LoadDeviceFn(GetImageMemoryRequirements, FALSE);

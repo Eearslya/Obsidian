@@ -28,7 +28,9 @@ typedef struct VulkanFunctionsT {
 	PFN_vkAllocateMemory AllocateMemory;
 	PFN_vkBindImageMemory BindImageMemory;
 	PFN_vkCreateImage CreateImage;
+	PFN_vkCreateImageView CreateImageView;
 	PFN_vkDestroyImage DestroyImage;
+	PFN_vkDestroyImageView DestroyImageView;
 	PFN_vkFreeMemory FreeMemory;
 	PFN_vkGetDeviceQueue GetDeviceQueue;
 	PFN_vkGetImageMemoryRequirements GetImageMemoryRequirements;
@@ -84,12 +86,19 @@ typedef struct VulkanImageT {
 	VkImageCreateInfo CreateInfo;
 } VulkanImage;
 
+typedef struct VulkanImageViewT {
+	VkImage Image;
+	VkImageView View;
+	VkImageViewCreateInfo CreateInfo;
+} VulkanImageView;
+
 typedef struct VulkanSwapchainT {
 	VkSurfaceCapabilitiesKHR Capabilities;
 	VkSurfaceFormatKHR* SurfaceFormats;
 	VkPresentModeKHR* PresentModes;
 	VkSwapchainKHR Swapchain;
-	VkImage* Images;
+	VulkanImage* Images;
+	VulkanImageView* Views;
 } VulkanSwapchain;
 
 typedef struct VulkanContextT {

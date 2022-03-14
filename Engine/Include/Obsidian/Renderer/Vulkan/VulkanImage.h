@@ -13,6 +13,16 @@ typedef struct VulkanImage_CreateInfoT {
 	VkImageUsageFlags Usage; /**< The usage flags that dictate how this image will be used. */
 } VulkanImage_CreateInfo;
 
+typedef struct VulkanImageView_CreateInfoT {
+	VulkanImage* Image;
+	VkImageViewType Type;
+	VkFormat Format;
+	U32 BaseMipLevel;
+	U32 MipLevels;
+	U32 BaseArrayLayer;
+	U32 ArrayLayers;
+} VulkanImageView_CreateInfo;
+
 /**
  * Create a Vulkan image with the information specified.
  * @param context The active Vulkan context.
@@ -28,6 +38,14 @@ VkResult VulkanImage_Create(VulkanContext* context, const VulkanImage_CreateInfo
  * @param image The image to destroy.
  */
 void VulkanImage_Destroy(VulkanContext* context, VulkanImage* image);
+
+VkImageAspectFlags VulkanImage_FormatAspect(VkFormat format);
+
+VkResult VulkanImageView_Create(VulkanContext* context,
+                                const VulkanImageView_CreateInfo* createInfo,
+                                VulkanImageView* view);
+
+void VulkanImageView_Destroy(VulkanContext* context, VulkanImageView* view);
 
 /**
  * Fill in an image creation structure for images that will only be read from (e.g. textures).

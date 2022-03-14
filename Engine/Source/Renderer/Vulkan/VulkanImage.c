@@ -88,6 +88,70 @@ void VulkanImage_Destroy(VulkanContext* context, VulkanImage* image) {
 	}
 }
 
+VkImageAspectFlags VulkanImage_FormatAspect(VkFormat format) {
+	switch (format) {
+		case VK_FORMAT_UNDEFINED:
+			return 0;
+
+		case VK_FORMAT_S8_UINT:
+			return VK_IMAGE_ASPECT_STENCIL_BIT;
+
+		case VK_FORMAT_D16_UNORM_S8_UINT:
+		case VK_FORMAT_D24_UNORM_S8_UINT:
+		case VK_FORMAT_D32_SFLOAT_S8_UINT:
+			return VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+
+		case VK_FORMAT_D16_UNORM:
+		case VK_FORMAT_D32_SFLOAT:
+		case VK_FORMAT_X8_D24_UNORM_PACK32:
+			return VK_IMAGE_ASPECT_DEPTH_BIT;
+
+		default:
+			return VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+}
+
+VkResult VulkanImageView_Create(VulkanContext* context,
+                                const VulkanImageView_CreateInfo* createInfo,
+                                VulkanImageView* view) {
+	Memory_Zero(view, sizeof(VulkanImageView));
+
+	const VkImageViewCreateInfo viewCI = {.sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+	                                      .pNext            = NULL,
+	                                      .flags            = 0,
+	                                      .image            = createInfo->Image->Image,
+	                                      .viewType         = createInfo->Type,
+	                                      .format           = createInfo->Format,
+	                                      .components       = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+	                                                           .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+	                                                           .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+	                                                           .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+	                                      .subresourceRange = {.aspectMask = VulkanImage_FormatAspect(createInfo->Format),
+	                                                           .baseMipLevel   = createInfo->BaseMipLevel,
+	                                                           .levelCount     = createInfo->MipLevels,
+	                                                           .baseArrayLayer = createInfo->BaseArrayLayer,
+	                                                           .layerCount     = createInfo->ArrayLayers}};
+
+	VkImageView vkImageView   = VK_NULL_HANDLE;
+	const VkResult viewResult = context->vk.CreateImageView(context->Device, &viewCI, &context->Allocator, &vkImageView);
+
+	if (viewResult == VK_SUCCESS) {
+		view->Image      = createInfo->Image->Image;
+		view->View       = vkImageView;
+		view->CreateInfo = viewCI;
+
+		LogD("[Vulkan] ImageView created.");
+	}
+
+	return viewResult;
+}
+
+void VulkanImageView_Destroy(VulkanContext* context, VulkanImageView* view) {
+	if (view->View) { context->vk.DestroyImageView(context->Device, view->View, &context->Allocator); }
+	view->Image = NULL;
+	view->View  = VK_NULL_HANDLE;
+}
+
 VulkanImage_CreateInfo VulkanImageCI_Immutable2D(VkFormat format, VkExtent2D extent) {
 	const VulkanImage_CreateInfo ci = {.Type   = VK_IMAGE_TYPE_2D,
 	                                   .Format = format,
