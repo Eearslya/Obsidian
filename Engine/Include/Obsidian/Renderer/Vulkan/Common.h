@@ -3,6 +3,8 @@
 #include <Obsidian/Defines.h>
 #include <vulkan/vulkan.h>
 
+struct PlatformStateT;
+
 typedef struct VulkanFunctionsT {
 	// Global Functions
 	PFN_vkEnumerateInstanceVersion EnumerateInstanceVersion;
@@ -75,7 +77,16 @@ typedef struct VulkanImageT {
 	VkImageCreateInfo CreateInfo;
 } VulkanImage;
 
+typedef struct VulkanSwapchainT {
+	VkSurfaceCapabilitiesKHR Capabilities;
+	VkSurfaceFormatKHR* SurfaceFormats;
+	VkPresentModeKHR* PresentModes;
+	VkSwapchainKHR Swapchain;
+	VkImage* Images;
+} VulkanSwapchain;
+
 typedef struct VulkanContextT {
+	struct PlatformStateT* Platform;
 	VulkanFunctions vk;
 	VkAllocationCallbacks Allocator;
 	B8 Validation;
@@ -90,6 +101,7 @@ typedef struct VulkanContextT {
 	VkQueue Compute;
 	VkQueue Transfer;
 	VkQueue AsyncGraphics;
+	VulkanSwapchain Swapchain;
 } VulkanContext;
 
 void Vulkan_ReportFailure(const char* expr, VkResult result, const char* msg, const char* file, int line);

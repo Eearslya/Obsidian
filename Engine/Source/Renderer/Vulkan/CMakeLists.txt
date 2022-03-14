@@ -4,4 +4,5 @@ target_sources(Obsidian-Engine PRIVATE
 	VulkanEngine.c
 	VulkanImage.c
 	VulkanInstance.c
-	VulkanStrings.c)
+	VulkanStrings.c
+	VulkanSwapchain.c)

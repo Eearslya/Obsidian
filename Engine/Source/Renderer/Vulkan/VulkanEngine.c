@@ -9,6 +9,7 @@
 #include <Obsidian/Renderer/Vulkan/VulkanInstance.h>
 #include <Obsidian/Renderer/Vulkan/VulkanPlatform.h>
 #include <Obsidian/Renderer/Vulkan/VulkanStrings.h>
+#include <Obsidian/Renderer/Vulkan/VulkanSwapchain.h>
 
 static VulkanContext Vulkan;
 
@@ -54,6 +55,7 @@ static B8 Vulkan_LoadGlobalFunctions() {
 
 B8 RenderEngine_Vulkan_Initialize(RenderEngine engine, const char* appName, struct PlatformStateT* platform) {
 	Memory_Zero(&Vulkan, sizeof(struct VulkanContextT));
+	Vulkan.Platform = platform;
 
 	// Set up allocator callbacks
 	{
@@ -119,10 +121,22 @@ B8 RenderEngine_Vulkan_Initialize(RenderEngine engine, const char* appName, stru
 		}
 	}
 
+	// Create swapchain
+	{
+		const VkResult swapchainResult = VulkanSwapchain_Create(&Vulkan);
+		if (swapchainResult != VK_SUCCESS) {
+			LogE("[Vulkan] Failed to create Vulkan swapchain! (%s)", VulkanString_VkResult(swapchainResult));
+			RenderEngine_Vulkan_Shutdown(engine);
+
+			return FALSE;
+		}
+	}
+
 	return TRUE;
 }
 
 void RenderEngine_Vulkan_Shutdown(RenderEngine engine) {
+	VulkanSwapchain_Destroy(&Vulkan);
 	VulkanDevice_Destroy(&Vulkan);
 	if (Vulkan.Instance) {
 		if (Vulkan.Surface) {
