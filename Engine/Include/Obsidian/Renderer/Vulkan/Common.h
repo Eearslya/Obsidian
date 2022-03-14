@@ -40,6 +40,13 @@ typedef struct VulkanFunctionsT {
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR GetPhysicalDeviceSurfacePresentModesKHR;
 	PFN_vkGetPhysicalDeviceSurfaceSupportKHR GetPhysicalDeviceSurfaceSupportKHR;
 
+	// VK_KHR_swapchain
+	PFN_vkAcquireNextImageKHR AcquireNextImageKHR;
+	PFN_vkCreateSwapchainKHR CreateSwapchainKHR;
+	PFN_vkDestroySwapchainKHR DestroySwapchainKHR;
+	PFN_vkGetSwapchainImagesKHR GetSwapchainImagesKHR;
+	PFN_vkQueuePresentKHR QueuePresentKHR;
+
 	// VK_EXT_debug_utils
 	PFN_vkCmdBeginDebugUtilsLabelEXT CmdBeginDebugUtilsLabelEXT;
 	PFN_vkCmdEndDebugUtilsLabelEXT CmdEndDebugUtilsLabelEXT;

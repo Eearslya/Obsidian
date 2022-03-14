@@ -389,6 +389,13 @@ VkResult VulkanDevice_Create(VulkanContext* context) {
 		LoadDeviceFn(FreeMemory, FALSE);
 		LoadDeviceFn(GetDeviceQueue, FALSE);
 		LoadDeviceFn(GetImageMemoryRequirements, FALSE);
+
+		// VK_KHR_swapchain
+		LoadDeviceFn(AcquireNextImageKHR, TRUE);
+		LoadDeviceFn(CreateSwapchainKHR, TRUE);
+		LoadDeviceFn(DestroySwapchainKHR, TRUE);
+		LoadDeviceFn(GetSwapchainImagesKHR, TRUE);
+		LoadDeviceFn(QueuePresentKHR, TRUE);
 #undef LoadDeviceFn
 
 		context->vk.GetDeviceQueue(
