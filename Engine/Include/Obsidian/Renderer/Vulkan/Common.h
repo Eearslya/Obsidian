@@ -20,6 +20,7 @@ typedef struct VulkanFunctionsT {
 	PFN_vkEnumeratePhysicalDevices EnumeratePhysicalDevices;
 	PFN_vkGetDeviceProcAddr GetDeviceProcAddr;
 	PFN_vkGetPhysicalDeviceFeatures GetPhysicalDeviceFeatures;
+	PFN_vkGetPhysicalDeviceFormatProperties GetPhysicalDeviceFormatProperties;
 	PFN_vkGetPhysicalDeviceMemoryProperties GetPhysicalDeviceMemoryProperties;
 	PFN_vkGetPhysicalDeviceProperties GetPhysicalDeviceProperties;
 	PFN_vkGetPhysicalDeviceQueueFamilyProperties GetPhysicalDeviceQueueFamilyProperties;
@@ -99,6 +100,8 @@ typedef struct VulkanSwapchainT {
 	VkSwapchainKHR Swapchain;
 	VulkanImage* Images;
 	VulkanImageView* Views;
+	VulkanImage DepthImage;
+	VulkanImageView DepthView;
 } VulkanSwapchain;
 
 typedef struct VulkanContextT {

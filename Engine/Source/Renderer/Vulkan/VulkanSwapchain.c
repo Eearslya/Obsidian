@@ -24,6 +24,8 @@ VkResult VulkanSwapchain_Create(VulkanContext* context) {
 
 /** Destroys all of the objects associated with an old swapchain while preserving anything the new swapchain can use. */
 void VulkanSwapchain_Clean(VulkanContext* context) {
+	VulkanImage_Destroy(context, &context->Swapchain.DepthImage);
+	VulkanImageView_Destroy(context, &context->Swapchain.DepthView);
 	if (context->Swapchain.Views) {
 		const U32 viewCount = DynArray_Size(&context->Swapchain.Views);
 		for (U32 i = 0; i < viewCount; ++i) {
@@ -214,5 +216,51 @@ VkResult VulkanSwapchain_Recreate(VulkanContext* context) {
 		}
 	}
 
-	return swapchainResult;
+	// Determine our favorite depth format
+	VkFormat depthFormat          = VK_FORMAT_UNDEFINED;
+	const VkFormat depthFormats[] = {VK_FORMAT_D32_SFLOAT,
+	                                 VK_FORMAT_D32_SFLOAT_S8_UINT,
+	                                 VK_FORMAT_D24_UNORM_S8_UINT,
+	                                 VK_FORMAT_D16_UNORM,
+	                                 VK_FORMAT_D16_UNORM_S8_UINT};
+	const U32 depthFormatCount    = sizeof(depthFormats) / sizeof(*depthFormats);
+	for (U32 i = 0; i < depthFormatCount; ++i) {
+		VkFormatProperties props;
+		context->vk.GetPhysicalDeviceFormatProperties(context->PhysicalDevice, depthFormats[i], &props);
+		if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+			depthFormat = depthFormats[i];
+			break;
+		}
+	}
+	// Per Vulkan spec, at least one of the above formats MUST be supported, so this should never happen
+	Assert(depthFormat != VK_FORMAT_UNDEFINED);
+
+	// Create our depth image
+	const VulkanImage_CreateInfo depthCI = {.Type   = VK_IMAGE_TYPE_2D,
+	                                        .Format = depthFormat,
+	                                        .Extent = imageCI.extent,
+	                                        .Usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT};
+	const VkResult imageResult           = VulkanImage_Create(context, &depthCI, &context->Swapchain.DepthImage);
+	if (imageResult != VK_SUCCESS) {
+		LogE("[VulkanSwapchain] Failed to create depth image for swapchain! (%s)", VulkanString_VkResult(imageResult));
+		VulkanSwapchain_Destroy(context);
+
+		return imageResult;
+	}
+	const VulkanImageView_CreateInfo depthViewCI = {.Image          = &context->Swapchain.DepthImage,
+	                                                .Type           = VK_IMAGE_VIEW_TYPE_2D,
+	                                                .Format         = depthCI.Format,
+	                                                .BaseMipLevel   = 0,
+	                                                .MipLevels      = 1,
+	                                                .BaseArrayLayer = 0,
+	                                                .ArrayLayers    = 1};
+	const VkResult viewResult = VulkanImageView_Create(context, &depthViewCI, &context->Swapchain.DepthView);
+	if (viewResult != VK_SUCCESS) {
+		LogE("[VulkanSwapchain] Failed to create depth image view for swapchain! (%s)", VulkanString_VkResult(viewResult));
+		VulkanSwapchain_Destroy(context);
+
+		return viewResult;
+	}
+
+	return VK_SUCCESS;
 }

@@ -285,6 +285,7 @@ VkResult VulkanInstance_Create(VulkanContext* context, ConstDynArrayT instanceEx
 		LoadInstanceFn(EnumeratePhysicalDevices, FALSE);
 		LoadInstanceFn(GetDeviceProcAddr, FALSE);
 		LoadInstanceFn(GetPhysicalDeviceFeatures, FALSE);
+		LoadInstanceFn(GetPhysicalDeviceFormatProperties, FALSE);
 		LoadInstanceFn(GetPhysicalDeviceMemoryProperties, FALSE);
 		LoadInstanceFn(GetPhysicalDeviceProperties, FALSE);
 		LoadInstanceFn(GetPhysicalDeviceQueueFamilyProperties, FALSE);

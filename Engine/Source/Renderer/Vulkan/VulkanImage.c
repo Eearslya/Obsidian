@@ -39,7 +39,8 @@ VkResult VulkanImage_Create(VulkanContext* context, const VulkanImage_CreateInfo
 	// Determine what memory type this image requires
 	VkMemoryRequirements memoryReq = {};
 	context->vk.GetImageMemoryRequirements(context->Device, vkImage, &memoryReq);
-	const I32 memoryType = VulkanDevice_FindMemoryType(context, memoryReq.memoryTypeBits, 0);
+	const I32 memoryType =
+		VulkanDevice_FindMemoryType(context, memoryReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	if (memoryType == -1) {
 		LogE("[VulkanImage] Failed to find a valid memory type when creating image!");
 		VulkanImage_Destroy(context, image);
